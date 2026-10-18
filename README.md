@@ -21,6 +21,8 @@ I've used it on my own car and it works.
 - Gives FORScan a folder on your Mac (it shows up as drive O:) for license keys and As-Built backups
 - Warns you when you don't have a backup yet
 - Reads engine codes and battery voltage without opening FORScan
+- Shows a live dashboard (RPM, speed, temperatures, fuel and more) while FORScan is closed
+- Lives in the menu bar if you want, and can start at login
 - Tells you when a new FORScan version is out, and when your license runs out
 
 ## Install
