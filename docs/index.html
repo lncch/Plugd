@@ -108,8 +108,8 @@ footer p + p { margin-top: 8px; }
   </header>
 
   <div class="shots">
-    <figure><img src="img/setup.png?v=0.3.0b" alt="Plugd one-time setup screen with Rosetta, Wine and FORScan steps"><figcaption>One-time setup, about 2 minutes</figcaption></figure>
-    <figure><img src="img/main.png?v=0.3.0b" alt="Plugd main screen with adapter status and Open FORScan button"><figcaption>Home: your adapter, FORScan and backups at a glance</figcaption></figure>
+    <figure><img src="img/main.png?v=0.3.0b" alt="Plugd Home page with adapter status and Open FORScan button"><figcaption>Home: your adapter, FORScan and backups at a glance</figcaption></figure>
+    <figure><img src="img/dashboard.png?v=0.3.1" alt="Plugd Dashboard with live engine speed, speed, coolant and battery readings"><figcaption>Dashboard: live readings while FORScan is closed</figcaption></figure>
   </div>
 </div>
 
@@ -127,6 +127,8 @@ footer p + p { margin-top: 8px; }
       <div class="step"><h3>Quick engine check</h3><p>Read the engine's error codes and the battery voltage in a few seconds, without opening FORScan.</p></div>
       <div class="step"><h3>Backups in sight</h3><p>Lists your As-Built backups by date, and warns you when there are none before you change a setting.</p></div>
       <div class="step"><h3>Stays current</h3><p>Shows when your FORScan Extended license runs out, and updates FORScan from forscan.org in one click.</p></div>
+      <div class="step"><h3>Live dashboard</h3><p>RPM, speed, coolant, battery, fuel level and more, about once a second. Only the readings your car supports show up.</p></div>
+      <div class="step"><h3>In the menu bar</h3><p>Adapter status, Open FORScan and engine codes from the menu bar. Can start at login and hide from the Dock.</p></div>
     </div>
     <div class="diagram"><pre><b>FORScan.exe</b> ──▶ Wine (COM1) ──▶ <b>/dev/cu.usbserial</b> ──▶ OBD adapter ──▶ car (HS-CAN / MS-CAN)
          ▲
@@ -136,8 +138,8 @@ footer p + p { margin-top: 8px; }
 
 <section id="tested">
   <div class="wrap">
-    <h2>Tested cars and adapters</h2>
-    <p class="lead">Every row is a real test. Tried it on your car? Open an issue on GitHub and it goes in the table.</p>
+    <h2>Works with</h2>
+    <p class="lead">The first table lists real tests. Tried it on your car? Open an issue on GitHub and it goes in.</p>
     <div class="table-wrap">
     <table>
       <thead><tr><th>Car</th><th>Adapter</th><th>Reads</th><th>Writes</th><th>Date</th></tr></thead>
@@ -149,6 +151,29 @@ footer p + p { margin-top: 8px; }
           <td><span class="ok">✓</span> features added, confirmed in the car</td>
           <td>Oct 2026</td>
         </tr>
+      </tbody>
+    </table>
+    </div>
+    <h3 style="margin-top:32px">Cars</h3>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>What</th><th>Which cars</th></tr></thead>
+      <tbody>
+        <tr><td>FORScan (settings, all modules)</td><td>Ford, Lincoln, Mercury, Mazda</td></tr>
+        <tr><td>Engine codes and Dashboard</td><td>Any car with OBD-II (petrol cars from about 2001). Engine only, not ABS or body.</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <h3 style="margin-top:32px">Adapters</h3>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Adapter</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>USB ELM327 with CH340 chip</td><td><span class="ok">✓</span> Tested</td></tr>
+        <tr><td>USB with FTDI, CP210x or PL2303 chip (OBDLink EX, vLinker FS USB)</td><td>Should work, not tested yet</td></tr>
+        <tr><td>Wi-Fi ELM327</td><td>Maybe, through FORScan's own network setting. Not tested.</td></tr>
+        <tr><td>Bluetooth ELM327</td><td>No</td></tr>
+        <tr><td>J2534 tools (VCM II, VXDIAG)</td><td>No, they need Windows drivers</td></tr>
       </tbody>
     </table>
     </div>
@@ -165,7 +190,7 @@ footer p + p { margin-top: 8px; }
     </details>
     <details id="adapters">
       <summary>Which adapters work?</summary>
-      <p>USB adapters that show up as a serial port: ELM327 clones with CH340, FTDI or PL2303 chips, OBDLink EX, vLinker FS USB. Bluetooth and Wi-Fi adapters are not supported yet. FORScan may warn that a cheap ELM327 is "not recommended"; ours still read and wrote fine.</p>
+      <p>USB adapters that show up as a serial port: ELM327 clones with CH340, FTDI, CP210x or PL2303 chips, OBDLink EX, vLinker FS USB. Bluetooth adapters don't work, and Wi-Fi ones are untested. See <a href="#tested">Works with</a>. FORScan may warn that a cheap ELM327 is "not recommended"; ours still read and wrote fine.</p>
     </details>
     <details>
       <summary>FORScan asks me to flip the HS/MS switch</summary>
