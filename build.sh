@@ -37,6 +37,7 @@ dylibbundler -of -b -x "$APP/Contents/Resources/bin/innoextract" \
 codesign --force --sign - "$APP/Contents/Resources/lib/"*.dylib
 codesign --force --sign - "$APP/Contents/Resources/bin/innoextract"
 cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+cp THIRD_PARTY.md "$APP/Contents/Resources/THIRD_PARTY.md"
 codesign --force --sign - "$APP"
 ditto -c -k --keepParent "$APP" ScanBridge.zip
 echo "built $(pwd)/$APP"
