@@ -1,6 +1,6 @@
 # Third-party software
 
-ScanBridge downloads or bundles these. It ships none of FORScan's files.
+OBDock downloads or bundles these. It ships none of FORScan's files.
 
 | Software | How it is used | License |
 |---|---|---|

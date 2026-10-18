@@ -5,7 +5,7 @@ enum StepState: Equatable {
     case waiting, running(String), done, failed(String)
 }
 
-/// Everything ScanBridge does outside its window: Rosetta, Wine, FORScan, the adapter.
+/// Everything OBDock does outside its window: Rosetta, Wine, FORScan, the adapter.
 @MainActor
 final class Engine: ObservableObject {
     // Wine build verified with FORScan and a real car on 2026-10-18.
@@ -39,12 +39,17 @@ final class Engine: ObservableObject {
     var ready: Bool { rosetta == .done && wine == .done && forscan == .done }
 
     init() {
-        // SCANBRIDGE_HOME lets a test run start from an empty folder.
-        if let home = ProcessInfo.processInfo.environment["SCANBRIDGE_HOME"] {
+        // OBDOCK_HOME lets a test run start from an empty folder.
+        if let home = ProcessInfo.processInfo.environment["OBDOCK_HOME"] {
             base = URL(fileURLWithPath: home)
         } else {
-            base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-                .appendingPathComponent("ScanBridge")
+            let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            base = support.appendingPathComponent("OBDock")
+            // The app was called ScanBridge in 0.1.0; keep that setup instead of downloading again.
+            let old = support.appendingPathComponent("ScanBridge")
+            if !FileManager.default.fileExists(atPath: base.path), FileManager.default.fileExists(atPath: old.path) {
+                try? FileManager.default.moveItem(at: old, to: base)
+            }
         }
         refreshSteps()
         poll()
@@ -64,8 +69,8 @@ final class Engine: ObservableObject {
     }
 
     func poll() {
-        // SCANBRIDGE_PORT lets a test use a fake adapter (e.g. ELM327-emulator's pty).
-        if let fake = ProcessInfo.processInfo.environment["SCANBRIDGE_PORT"] {
+        // OBDOCK_PORT lets a test use a fake adapter (e.g. ELM327-emulator's pty).
+        if let fake = ProcessInfo.processInfo.environment["OBDOCK_PORT"] {
             port = fake
             running = Self.forscanRunning(in: forscanDir)
             return

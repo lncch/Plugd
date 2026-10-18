@@ -1,18 +1,18 @@
-<p align="center"><img src="site/img/icon.png" width="128" alt="ScanBridge icon"></p>
+<p align="center"><img src="site/img/icon.png" width="128" alt="OBDock icon"></p>
 
-<h1 align="center">ScanBridge</h1>
+<h1 align="center">OBDock</h1>
 
 <p align="center">Run FORScan (Ford/Mazda diagnostics, Windows only) on an Apple Silicon Mac.<br>Free, no Windows, no virtual machine.</p>
 
-<p align="center"><a href="https://github.com/lncch/ScanBridge/releases/latest/download/ScanBridge.zip"><b>Download for Mac</b></a> · macOS 14+ · Apple Silicon · USB OBD adapter</p>
+<p align="center"><a href="https://github.com/lncch/OBDock/releases/latest/download/OBDock.zip"><b>Download for Mac</b></a> · macOS 14+ · Apple Silicon · USB OBD adapter</p>
 
 <p align="center"><img src="site/img/setup.png" width="420" alt="Setup screen"> <img src="site/img/main.png" width="420" alt="Main screen"></p>
 
-ScanBridge sets up Wine, downloads FORScan from forscan.org, maps your USB OBD adapter to COM1, and opens FORScan with one button.
+OBDock sets up Wine, downloads FORScan from forscan.org, maps your USB OBD adapter to COM1, and opens FORScan with one button.
 
 ## Install
 
-1. Download `ScanBridge.zip`, unzip it, and move ScanBridge to Applications.
+1. Download `OBDock.zip`, unzip it, and move OBDock to Applications.
 2. Open it. macOS blocks it the first time because it isn't notarized yet: open System Settings → Privacy & Security and click **Open Anyway**.
 3. Click **Set Up** and accept FORScan's license (about 2 minutes, ~230 MB download).
 4. Plug in your adapter and click **Open FORScan**.
@@ -31,17 +31,17 @@ Needs the Xcode command line tools, `brew install innoextract dylibbundler`.
 
 ## Test hooks
 
-    SCANBRIDGE_HOME=/tmp/empty ScanBridge.app/Contents/MacOS/ScanBridge --headless-setup
-    SCANBRIDGE_HOME=/tmp/empty SCANBRIDGE_PORT=/dev/ttys008 ScanBridge.app/Contents/MacOS/ScanBridge --headless-open
+    OBDOCK_HOME=/tmp/empty OBDock.app/Contents/MacOS/OBDock --headless-setup
+    OBDOCK_HOME=/tmp/empty OBDOCK_PORT=/dev/ttys008 OBDock.app/Contents/MacOS/OBDock --headless-open
 
-`SCANBRIDGE_PORT` points at a fake adapter such as ELM327-emulator's pseudo-terminal.
+`OBDOCK_PORT` points at a fake adapter such as ELM327-emulator's pseudo-terminal.
 
 ## Why not the official installer?
 
-FORScan's Inno Setup installer crashes under Wine 11 (access violation in kernel32 under WoW64, tested on Wine stable 11.0, devel 11.18, staging 11.18). ScanBridge tries it first. If it fails, it unpacks the same installer on your Mac with innoextract and copies its files unchanged.
+FORScan's Inno Setup installer crashes under Wine 11 (access violation in kernel32 under WoW64, tested on Wine stable 11.0, devel 11.18, staging 11.18). OBDock tries it first. If it fails, it unpacks the same installer on your Mac with innoextract and copies its files unchanged.
 
-FORScan is made by Alexey Savin. ScanBridge is not affiliated with FORScan or Ford.
+FORScan is made by Alexey Savin. OBDock is not affiliated with FORScan or Ford.
 
 ## License
 
-ScanBridge's code is MIT licensed (see `LICENSE`). FORScan, Wine and innoextract keep their own licenses (see `THIRD_PARTY.md`).
+OBDock's code is MIT licensed (see `LICENSE`). FORScan, Wine and innoextract keep their own licenses (see `THIRD_PARTY.md`).

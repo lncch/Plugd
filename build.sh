@@ -1,26 +1,26 @@
 #!/bin/bash
-# Builds ScanBridge.app with the command line tools (no Xcode).
+# Builds OBDock.app with the command line tools (no Xcode).
 set -euo pipefail
 cd "$(dirname "$0")"
 
-APP=ScanBridge.app
+APP=OBDock.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/bin" "$APP/Contents/Resources/lib"
 
-swiftc -O -parse-as-library -target arm64-apple-macos14.0 Sources/*.swift -o "$APP/Contents/MacOS/ScanBridge"
+swiftc -O -parse-as-library -target arm64-apple-macos14.0 Sources/*.swift -o "$APP/Contents/MacOS/OBDock"
 
 cat > "$APP/Contents/Info.plist" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>ScanBridge</string>
-  <key>CFBundleDisplayName</key><string>ScanBridge</string>
-  <key>CFBundleIdentifier</key><string>dev.almoayyad.scanbridge</string>
-  <key>CFBundleExecutable</key><string>ScanBridge</string>
+  <key>CFBundleName</key><string>OBDock</string>
+  <key>CFBundleDisplayName</key><string>OBDock</string>
+  <key>CFBundleIdentifier</key><string>dev.almoayyad.obdock</string>
+  <key>CFBundleExecutable</key><string>OBDock</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
-  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>0.1.1</string>
+  <key>CFBundleVersion</key><string>2</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>CFBundleIconFile</key><string>AppIcon</string>
@@ -39,5 +39,5 @@ codesign --force --sign - "$APP/Contents/Resources/bin/innoextract"
 cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp THIRD_PARTY.md "$APP/Contents/Resources/THIRD_PARTY.md"
 codesign --force --sign - "$APP"
-ditto -c -k --keepParent "$APP" ScanBridge.zip
+ditto -c -k --keepParent "$APP" OBDock.zip
 echo "built $(pwd)/$APP"

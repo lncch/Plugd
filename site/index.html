@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ScanBridge: FORScan on Mac</title>
+<title>OBDock: FORScan on Mac</title>
 <meta name="description" content="Run FORScan on an Apple Silicon Mac. Free, no Windows, no virtual machine. Reads and As-Built writes tested on a real Ford.">
 <link rel="icon" href="img/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -83,44 +83,44 @@ footer p + p { margin-top: 8px; }
 <body>
 <div class="wrap">
   <nav>
-    <a class="brand" href="#"><img src="img/icon.png" alt="">ScanBridge</a>
+    <a class="brand" href="#"><img src="img/icon.png" alt="">OBDock</a>
     <div class="links">
       <a href="#how">How it works</a>
       <a href="#tested">Tested</a>
       <a href="#faq">FAQ</a>
-      <a href="https://github.com/lncch/ScanBridge">GitHub</a>
+      <a href="https://github.com/lncch/OBDock">GitHub</a>
     </div>
   </nav>
 
   <header class="hero">
     <span class="pill"><b>●</b> Reads and As-Built writes tested on a real Ford</span>
     <h1>FORScan on your Mac.<br>No Windows needed.</h1>
-    <p>ScanBridge sets up everything FORScan needs on an Apple Silicon Mac, finds your OBD adapter, and opens FORScan with one click. Free.</p>
+    <p>OBDock sets up everything FORScan needs on an Apple Silicon Mac, finds your OBD adapter, and opens FORScan with one click. Free.</p>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/lncch/ScanBridge/releases/latest/download/ScanBridge.zip">Download for Mac</a>
-      <a class="btn" href="https://github.com/lncch/ScanBridge">View source</a>
+      <a class="btn primary" href="https://github.com/lncch/OBDock/releases/latest/download/OBDock.zip">Download for Mac</a>
+      <a class="btn" href="https://github.com/lncch/OBDock">View source</a>
     </div>
-    <p class="req">Apple Silicon · macOS 14 or later · USB OBD adapter · v0.1.0</p>
+    <p class="req">Apple Silicon · macOS 14 or later · USB OBD adapter · v0.1.1</p>
   </header>
 
   <div class="shots">
-    <figure><img src="img/setup.png" alt="ScanBridge one-time setup screen with Rosetta, Wine and FORScan steps"><figcaption>One-time setup, about 2 minutes</figcaption></figure>
-    <figure><img src="img/main.png" alt="ScanBridge main screen with adapter status and Open FORScan button"><figcaption>Plug in, click Open FORScan</figcaption></figure>
+    <figure><img src="img/setup.png" alt="OBDock one-time setup screen with Rosetta, Wine and FORScan steps"><figcaption>One-time setup, about 2 minutes</figcaption></figure>
+    <figure><img src="img/main.png" alt="OBDock main screen with adapter status and Open FORScan button"><figcaption>Plug in, click Open FORScan</figcaption></figure>
   </div>
 </div>
 
 <section id="how">
   <div class="wrap">
     <h2>How it works</h2>
-    <p class="lead">FORScan is a Windows app. ScanBridge runs it with Wine, a free layer that runs Windows programs on macOS, and connects it to your adapter.</p>
+    <p class="lead">FORScan is a Windows app. OBDock runs it with Wine, a free layer that runs Windows programs on macOS, and connects it to your adapter.</p>
     <div class="steps">
       <div class="step"><h3>Set up once</h3><p>Installs Rosetta, downloads Wine, and gets the official FORScan installer from forscan.org. You read and accept FORScan's license.</p></div>
-      <div class="step"><h3>Plug in</h3><p>ScanBridge spots your USB adapter and maps it to COM1, the port FORScan expects. Changed USB ports? It remaps.</p></div>
+      <div class="step"><h3>Plug in</h3><p>OBDock spots your USB adapter and maps it to COM1, the port FORScan expects. Changed USB ports? It remaps.</p></div>
       <div class="step"><h3>Open FORScan</h3><p>The full Windows FORScan, with its Extended license, configuration, and As-Built editing.</p></div>
     </div>
     <div class="diagram"><pre><b>FORScan.exe</b> ──▶ Wine (COM1) ──▶ <b>/dev/cu.usbserial</b> ──▶ OBD adapter ──▶ car (HS-CAN / MS-CAN)
          ▲
-   ScanBridge: setup, port mapping, start and stop</pre></div>
+   OBDock: setup, port mapping, start and stop</pre></div>
   </div>
 </section>
 
@@ -150,8 +150,8 @@ footer p + p { margin-top: 8px; }
     <h2>FAQ</h2>
     <details>
       <summary>macOS says the app "cannot be opened"</summary>
-      <p>ScanBridge isn't notarized by Apple yet. To open it the first time:</p>
-      <ol><li>Try to open ScanBridge once and close the warning.</li><li>Open System Settings → Privacy &amp; Security.</li><li>Scroll down and click <b>Open Anyway</b> next to ScanBridge.</li></ol>
+      <p>OBDock isn't notarized by Apple yet. To open it the first time:</p>
+      <ol><li>Try to open OBDock once and close the warning.</li><li>Open System Settings → Privacy &amp; Security.</li><li>Scroll down and click <b>Open Anyway</b> next to OBDock.</li></ol>
     </details>
     <details>
       <summary>Which adapters work?</summary>
@@ -163,15 +163,15 @@ footer p + p { margin-top: 8px; }
     </details>
     <details>
       <summary>Do I need a FORScan license?</summary>
-      <p>Reading codes works with the free Standard license. Changing settings needs the Extended license (a free 2-month trial at forscan.org). The key is tied to the computer's hardware ID, so get a key for the hardware ID FORScan shows on your Mac. In ScanBridge, click <b>Add License Key</b>, then load it in FORScan's About page.</p>
+      <p>Reading codes works with the free Standard license. Changing settings needs the Extended license (a free 2-month trial at forscan.org). The key is tied to the computer's hardware ID, so get a key for the hardware ID FORScan shows on your Mac. In OBDock, click <b>Add License Key</b>, then load it in FORScan's About page.</p>
     </details>
     <details>
       <summary>Is it safe to write settings?</summary>
-      <p>Writing settings can break a module if it goes wrong. Save a backup of each module's As-Built data first, keep a battery charger on, and don't change values you don't understand. ScanBridge passes FORScan's commands through and doesn't change them, but you use it at your own risk.</p>
+      <p>Writing settings can break a module if it goes wrong. Save a backup of each module's As-Built data first, keep a battery charger on, and don't change values you don't understand. OBDock passes FORScan's commands through and doesn't change them, but you use it at your own risk.</p>
     </details>
     <details>
-      <summary>Does ScanBridge include FORScan?</summary>
-      <p>No. ScanBridge downloads the official installer from forscan.org on your Mac. FORScan's installer crashes inside Wine today, so ScanBridge unpacks that same installer and copies its files unchanged.</p>
+      <summary>Does OBDock include FORScan?</summary>
+      <p>No. OBDock downloads the official installer from forscan.org on your Mac. FORScan's installer crashes inside Wine today, so OBDock unpacks that same installer and copies its files unchanged.</p>
     </details>
     <details>
       <summary>Will it keep working on future macOS versions?</summary>
@@ -182,8 +182,8 @@ footer p + p { margin-top: 8px; }
 
 <footer>
   <div class="wrap">
-    <p>FORScan is made by Alexey Savin (forscan.org). ScanBridge is an independent project, not affiliated with FORScan, Ford or Mazda.</p>
-    <p>Built by Almoayyad Abuljdail · <a href="https://github.com/lncch/ScanBridge">Source on GitHub</a></p>
+    <p>FORScan is made by Alexey Savin (forscan.org). OBDock is an independent project, not affiliated with FORScan, Ford or Mazda.</p>
+    <p>Built by Almoayyad Abuljdail · <a href="https://github.com/lncch/OBDock">Source on GitHub</a></p>
   </div>
 </footer>
 </body>

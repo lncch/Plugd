@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct ScanBridgeApp: App {
+struct OBDockApp: App {
     @StateObject private var engine = Engine()
 
     init() {
@@ -31,7 +31,7 @@ struct ScanBridgeApp: App {
     }
 
     var body: some Scene {
-        Window("ScanBridge", id: "main") {
+        Window("OBDock", id: "main") {
             ContentView()
                 .environmentObject(engine)
                 .frame(width: 480)
@@ -40,11 +40,11 @@ struct ScanBridgeApp: App {
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("About ScanBridge") { Self.showAbout() }
+                Button("About OBDock") { Self.showAbout() }
             }
             CommandGroup(replacing: .help) {
-                Link("ScanBridge on GitHub", destination: URL(string: "https://github.com/lncch/ScanBridge")!)
-                Link("Report a Problem", destination: URL(string: "https://github.com/lncch/ScanBridge/issues")!)
+                Link("OBDock on GitHub", destination: URL(string: "https://github.com/lncch/OBDock")!)
+                Link("Report a Problem", destination: URL(string: "https://github.com/lncch/OBDock/issues")!)
                 Divider()
                 Link("FORScan Website", destination: URL(string: "https://forscan.org")!)
             }
@@ -55,10 +55,10 @@ struct ScanBridgeApp: App {
         let text = """
         Runs FORScan on Apple Silicon Macs with Wine.
         Open source under the MIT license.
-        github.com/lncch/ScanBridge
+        github.com/lncch/OBDock
 
         FORScan is made by Alexey Savin (forscan.org).
-        ScanBridge is not affiliated with FORScan, Ford or Mazda.
+        OBDock is not affiliated with FORScan, Ford or Mazda.
         Uses Wine (LGPL) and innoextract (zlib).
         """
         let para = NSMutableParagraphStyle()
@@ -89,7 +89,7 @@ struct ContentView: View {
                 .frame(height: 90)
             }
             .font(.caption)
-            Text("FORScan is made by Alexey Savin (forscan.org). ScanBridge is not affiliated with FORScan or Ford. It runs the Windows version of FORScan on your Mac.")
+            Text("FORScan is made by Alexey Savin (forscan.org). OBDock is not affiliated with FORScan or Ford. It runs the Windows version of FORScan on your Mac.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -108,7 +108,7 @@ struct ContentView: View {
                 .resizable()
                 .frame(width: 52, height: 52)
             VStack(alignment: .leading, spacing: 2) {
-                Text("ScanBridge").font(.title2.bold())
+                Text("OBDock").font(.title2.bold())
                 Text("FORScan on your Mac, no Windows needed").foregroundStyle(.secondary)
             }
         }
