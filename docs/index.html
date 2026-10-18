@@ -109,7 +109,7 @@ footer p + p { margin-top: 8px; }
 
   <div class="shots">
     <figure><img src="img/setup.png?v=0.3.0" alt="OBDock one-time setup screen with Rosetta, Wine and FORScan steps"><figcaption>One-time setup, about 2 minutes</figcaption></figure>
-    <figure><img src="img/main.png?v=0.3.0" alt="OBDock main screen with adapter status and Open FORScan button"><figcaption>Adapter, license, engine codes and backups at a glance</figcaption></figure>
+    <figure><img src="img/main.png?v=0.3.0" alt="OBDock main screen with adapter status and Open FORScan button"><figcaption>Open FORScan, check engine codes, keep backups</figcaption></figure>
   </div>
 </div>
 
@@ -163,7 +163,7 @@ footer p + p { margin-top: 8px; }
       <p>OBDock isn't notarized by Apple yet. To open it the first time:</p>
       <ol><li>Try to open OBDock once and close the warning.</li><li>Open System Settings → Privacy &amp; Security.</li><li>Scroll down and click <b>Open Anyway</b> next to OBDock.</li></ol>
     </details>
-    <details>
+    <details id="adapters">
       <summary>Which adapters work?</summary>
       <p>USB adapters that show up as a serial port: ELM327 clones with CH340, FTDI or PL2303 chips, OBDLink EX, vLinker FS USB. Bluetooth and Wi-Fi adapters are not supported yet. FORScan may warn that a cheap ELM327 is "not recommended"; ours still read and wrote fine.</p>
     </details>

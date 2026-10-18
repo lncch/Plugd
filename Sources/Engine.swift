@@ -41,6 +41,7 @@ final class Engine: ObservableObject {
     @Published var serialBusy = false
     @Published var portHeld = false
     @Published var codes: ELM.Codes?
+    @Published var codesCheckedAt: Date?
     @Published var license: License?
     @Published var installedVersion: String?
     @Published var latestVersion: String?

@@ -18,6 +18,7 @@ extension Engine {
         if port != oldPort {
             adapter = nil
             codes = nil
+            codesCheckedAt = nil
             chip = port == nil ? nil : Self.usbChip()
             if port != nil { Task { await probeAdapter() } }
         }
@@ -46,6 +47,7 @@ extension Engine {
         codes = .checking
         let result = await Task.detached { ELM.readCodes(port) }.value
         codes = result
+        codesCheckedAt = Date()
         switch result {
         case .ok(let s, let p): say("Engine codes: \(s.isEmpty ? "none stored" : s.joined(separator: ", "))\(p.isEmpty ? "" : ", pending \(p.joined(separator: ", "))")")
         case .failed(let m): say("Code check: \(m)")
@@ -161,7 +163,6 @@ extension Engine {
     // MARK: - Backups
 
     var backups: [URL] { files.filter(Self.isBackup) }
-    var otherFiles: [URL] { files.filter { !Self.isBackup($0) } }
 
     nonisolated static func isBackup(_ url: URL) -> Bool { ["abt", "ab"].contains(url.pathExtension.lowercased()) }
 

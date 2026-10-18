@@ -122,9 +122,10 @@ struct OBDockApp: App {
 struct ContentView: View {
     @EnvironmentObject var engine: Engine
     @State private var showLog = false
+    @State private var dropTargeted = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
             header
             if engine.ready { MainPanel() } else { SetupPanel() }
             DisclosureGroup("Details", isExpanded: $showLog) {
@@ -137,11 +138,24 @@ struct ContentView: View {
                 .frame(height: 90)
             }
             .font(.caption)
-            Text("FORScan is made by Alexey Savin (forscan.org). OBDock is not affiliated with FORScan or Ford. It runs the Windows version of FORScan on your Mac.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            .foregroundStyle(.secondary)
         }
-        .padding(24)
+        .padding(20)
+        // Files can be dropped anywhere on the window once FORScan is set up.
+        .dropDestination(for: URL.self) { urls, _ in
+            guard engine.ready else { return false }
+            engine.addFiles(urls)
+            return true
+        } isTargeted: { dropTargeted = $0 && engine.ready }
+        .overlay {
+            if dropTargeted {
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 3, dash: [8, 5]))
+                    .overlay(Text("Drop to give FORScan these files (drive O:)").font(.headline)
+                        .padding(10).background(.regularMaterial, in: Capsule()))
+                    .padding(6)
+            }
+        }
         .sheet(isPresented: Binding(get: { engine.eulaText != nil }, set: { _ in })) {
             EulaSheet(text: engine.eulaText ?? "")
         }
@@ -151,16 +165,31 @@ struct ContentView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 12) {
-            Image(nsImage: NSApp.applicationIconImage)
-                .resizable()
-                .frame(width: 52, height: 52)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("OBDock").font(.title2.bold())
-                Text("FORScan on your Mac, no Windows needed").foregroundStyle(.secondary)
+        HStack(spacing: 10) {
+            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 28, height: 28)
+                .accessibilityHidden(true)
+            Text("OBDock").font(.headline)
+            Spacer()
+            Menu {
+                Button("Report a Problem…") { engine.saveReport() }
+                Link("Which adapter do I need?", destination: Links.adapters)
+                Link("OBDock on GitHub", destination: Links.github)
+                Divider()
+                Button("About OBDock") { OBDockApp.showAbout() }
+            } label: {
+                Image(systemName: "questionmark.circle")
             }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("Help")
         }
     }
+}
+
+enum Links {
+    static let github = URL(string: "https://github.com/lncch/OBDock")!
+    static let adapters = URL(string: "https://obdock.almoayyad.dev/#adapters")!
 }
 
 // MARK: - Setup
@@ -169,11 +198,21 @@ struct SetupPanel: View {
     @EnvironmentObject var engine: Engine
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("One-time setup").font(.headline)
-            StepRow(title: "Rosetta", detail: "Apple's tool to run Intel apps", state: engine.rosetta)
-            StepRow(title: "Wine", detail: "Runs Windows programs (≈190 MB download)", state: engine.wine)
-            StepRow(title: "FORScan", detail: "Downloaded from forscan.org", state: engine.forscan)
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Set up FORScan on this Mac").font(.title3.weight(.semibold))
+                Text("One time, about 2 minutes and a 230 MB download. You will read and accept FORScan's license. macOS may ask for your password to install Rosetta.")
+                    .font(.callout).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            VStack(alignment: .leading, spacing: 12) {
+                StepRow(title: "Rosetta", detail: "Apple's tool to run Intel apps", state: engine.rosetta)
+                StepRow(title: "Wine", detail: "Runs Windows programs (190 MB download)", state: engine.wine)
+                StepRow(title: "FORScan", detail: "Downloaded from forscan.org", state: engine.forscan)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
             Button {
                 Task { await engine.setUp() }
             } label: {
@@ -181,10 +220,9 @@ struct SetupPanel: View {
             }
             .buttonStyle(BrandButtonStyle())
             .disabled(engine.busy)
-            .padding(.top, 4)
+            Text("FORScan is made by Alexey Savin (forscan.org). OBDock is not affiliated with FORScan or Ford.")
+                .font(.caption2).foregroundStyle(.secondary)
         }
-        .padding(16)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
     }
 }
 
@@ -228,91 +266,99 @@ struct MainPanel: View {
     @EnvironmentObject var engine: Engine
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            StatusCard()
-            if engine.running {
-                Button {
-                    Task { await engine.quitForscan() }
-                } label: {
-                    Label("Quit FORScan", systemImage: "stop.fill").frame(maxWidth: .infinity)
-                }
-                .controlSize(.large)
-                .disabled(engine.busy)
-            } else {
-                Button {
-                    Task { await engine.openForscan() }
-                } label: {
-                    Label(engine.busy ? "Opening…" : "Open FORScan", systemImage: "play.fill")
-                }
-                .buttonStyle(BrandButtonStyle())
-                .disabled(engine.busy || engine.serialBusy)
-            }
-            if engine.updateAvailable, let latest = engine.latestVersion {
-                HStack(spacing: 10) {
-                    Image(systemName: "arrow.down.circle.fill").foregroundStyle(Color.accentColor)
-                    Text("FORScan \(latest) is out. You have \(engine.installedVersion ?? "an older one").").font(.callout)
-                    Spacer()
-                    Button("Update") { Task { await engine.updateForscan() } }.disabled(engine.busy)
-                }
-                .padding(12)
-                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
-            }
+        VStack(alignment: .leading, spacing: 12) {
+            ForscanCard()
             CodesCard()
-            BackupsCard()
             FilesCard()
         }
     }
 }
 
-/// Adapter, battery voltage and FORScan license in one row.
-struct StatusCard: View {
+/// Adapter, Open FORScan, then license and version: the one thing people open the app for.
+struct ForscanCard: View {
     @EnvironmentObject var engine: Engine
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Circle()
-                .fill(engine.port == nil ? Color.secondary.opacity(0.5) : .green)
-                .frame(width: 10, height: 10)
-                .padding(.top, 5)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(engine.port == nil ? "No OBD adapter" : "Adapter connected").fontWeight(.medium)
-                Text(detail).font(.caption).foregroundStyle(.secondary)
-                if engine.running, let mapped = engine.mappedPort, mapped != engine.port {
-                    Text("Adapter changed. Quit and reopen FORScan to use it.").font(.caption).foregroundStyle(.orange)
-                }
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 6) {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Circle().fill(engine.port == nil ? Color.secondary.opacity(0.5) : .green).frame(width: 9, height: 9)
+                Text(adapterTitle).fontWeight(.medium)
+                Spacer()
                 if let volts = engine.adapter?.volts {
                     Button { Task { await engine.probeAdapter() } } label: {
-                        Label(volts, systemImage: "bolt.fill").font(.caption.monospacedDigit())
+                        Label("Car battery \(volts)", systemImage: "bolt.fill").font(.caption.monospacedDigit())
                     }
                     .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
                     .disabled(!engine.canUseAdapter)
-                    .help("Car battery voltage at the OBD port. Click to read it again.")
+                    .help("Voltage at the OBD port. Click to read it again.")
                 }
-                if let license = engine.license { licenseBadge(license) }
             }
+            .accessibilityElement(children: .combine)
+            if engine.port == nil {
+                HStack(spacing: 4) {
+                    Text("Plug in a USB OBD adapter.").foregroundStyle(.secondary)
+                    Link("Which one do I need?", destination: Links.adapters)
+                }
+                .font(.caption)
+            }
+            if engine.running, let mapped = engine.mappedPort, mapped != engine.port {
+                Text("Adapter changed. Quit and reopen FORScan to use it.").font(.caption).foregroundStyle(.orange)
+            }
+
+            if engine.running {
+                Button { Task { await engine.quitForscan() } } label: {
+                    Label("Quit FORScan", systemImage: "stop.fill").frame(maxWidth: .infinity)
+                }
+                .controlSize(.large)
+                .disabled(engine.busy)
+            } else {
+                Button { Task { await engine.openForscan() } } label: {
+                    Label(engine.busy ? "Starting FORScan…" : "Open FORScan", systemImage: "play.fill")
+                }
+                .buttonStyle(BrandButtonStyle())
+                .disabled(engine.busy || engine.serialBusy)
+                if engine.busy {
+                    Text("The first start takes about 30 seconds.").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+
+            HStack(spacing: 4) {
+                licenseText
+                if let v = engine.installedVersion { Text("·  FORScan \(v)").foregroundStyle(.secondary) }
+                Spacer()
+                if engine.updateAvailable, let latest = engine.latestVersion {
+                    Button("Update to \(latest)") { Task { await engine.updateForscan() } }
+                        .controlSize(.small)
+                        .disabled(engine.busy)
+                }
+            }
+            .font(.caption)
         }
         .padding(14)
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    private var detail: String {
-        guard let port = engine.port else { return "Plug in a USB OBD adapter (ELM327, OBDLink EX, vLinker FS)" }
-        if engine.running { return "In use by FORScan · \(port) → COM1" }
-        let parts = [engine.chip, engine.adapter?.version].compactMap { $0 }
-        return (parts.isEmpty ? [port] : parts).joined(separator: " · ")
+    private var adapterTitle: String {
+        guard engine.port != nil else { return "No adapter plugged in" }
+        if engine.running { return "Adapter in use by FORScan" }
+        let name = [engine.chip, engine.adapter?.version].compactMap { $0 }.joined(separator: " · ")
+        return name.isEmpty ? "Adapter connected" : "\(name) connected"
     }
 
-    private func licenseBadge(_ l: License) -> some View {
-        let (text, color): (String, Color) = {
-            guard let days = l.daysLeft, let date = l.expires else { return ("Standard license", .secondary) }
-            if days < 0 { return ("Extended expired", .red) }
-            return ("Extended · \(date.formatted(.dateTime.day().month()))", days <= 14 ? .orange : .secondary)
-        }()
-        return Label(text, systemImage: "key.fill").font(.caption).foregroundStyle(color)
-            .help(l.expires == nil ? "FORScan's free license" : "FORScan Extended license. Get a new key on forscan.org before it runs out.")
+    @ViewBuilder private var licenseText: some View {
+        if let l = engine.license {
+            if let date = l.expires, let days = l.daysLeft {
+                if days < 0 {
+                    Label("Extended license expired", systemImage: "key.fill").foregroundStyle(.red)
+                } else {
+                    Label("Extended license until \(date.formatted(.dateTime.day().month()))", systemImage: "key.fill")
+                        .foregroundStyle(days <= 14 ? .orange : .secondary)
+                }
+            } else {
+                Label("Standard license", systemImage: "key").foregroundStyle(.secondary)
+            }
+        }
     }
 }
 
@@ -321,35 +367,53 @@ struct CodesCard: View {
     @EnvironmentObject var engine: Engine
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
                 Label("Engine codes", systemImage: "engine.combustion").fontWeight(.medium)
+                if let summary {
+                    Text(summary).font(.caption).foregroundStyle(.secondary)
+                }
+                if let at = engine.codesCheckedAt, engine.codes != .checking {
+                    (Text("· ") + Text(at, style: .relative) + Text(" ago")).font(.caption).foregroundStyle(.secondary)
+                }
                 Spacer()
                 Button(engine.codes == .checking ? "Checking…" : "Check") { Task { await engine.checkCodes() } }
                     .disabled(!engine.canUseAdapter)
             }
+            if let hint {
+                Text(hint).font(.caption).foregroundStyle(.secondary)
+            }
             switch engine.codes {
-            case nil:
-                Text(engine.running ? "FORScan is using the adapter. Quit it to check here."
-                     : engine.portHeld ? "Another program is using the adapter. Close it to check here."
-                     : "Reads the engine's stored and pending codes in a few seconds. Ignition on, switch on HS.")
-                    .font(.caption).foregroundStyle(.secondary)
             case .checking:
                 HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Talking to the car…").font(.caption) }
             case .failed(let message):
                 Text(message).font(.caption).foregroundStyle(.orange)
-            case .ok(let stored, let pending) where stored.isEmpty && pending.isEmpty:
-                Label("No engine codes", systemImage: "checkmark.circle.fill").font(.callout).foregroundStyle(.green)
-            case .ok(let stored, let pending):
+            case .ok(let stored, let pending) where !(stored.isEmpty && pending.isEmpty):
                 VStack(spacing: 6) {
                     ForEach(stored, id: \.self) { row($0, "Stored") }
                     ForEach(pending.filter { !stored.contains($0) }, id: \.self) { row($0, "Pending") }
                 }
                 Text("Other modules (ABS, body, steering) need FORScan.").font(.caption2).foregroundStyle(.secondary)
+            default:
+                EmptyView()
             }
         }
         .padding(14)
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var summary: String? {
+        if case .ok(let s, let p) = engine.codes { return s.isEmpty && p.isEmpty ? "No codes" : "\(s.count + p.count) found" }
+        return nil
+    }
+
+    /// Why Check is greyed out, or what it does before the first check.
+    private var hint: String? {
+        if engine.port == nil { return "Plug in an adapter first." }
+        if engine.running { return "FORScan is using the adapter. Quit it to check here." }
+        if engine.portHeld { return "Another program is using the adapter. Close it to check here." }
+        if engine.codes == nil { return "Reads the engine's stored and pending codes in a few seconds, with the ignition on." }
+        return nil
     }
 
     private func row(_ code: String, _ kind: String) -> some View {
@@ -364,34 +428,60 @@ struct CodesCard: View {
     }
 }
 
-/// As-Built backups (.abt) on drive O:, newest first.
-struct BackupsCard: View {
+/// The folder FORScan sees as drive O:: license keys, profiles and As-Built backups in one place.
+struct FilesCard: View {
     @EnvironmentObject var engine: Engine
+    @State private var showBackupHelp = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Label("As-Built backups", systemImage: "clock.arrow.circlepath").fontWeight(.medium)
+            HStack(spacing: 6) {
+                Label("Files for FORScan", systemImage: "folder").fontWeight(.medium)
                 Spacer()
-                Text("\(engine.backups.count)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                Text("\(engine.files.count) \(engine.files.count == 1 ? "file" : "files") · \(engine.backups.count) \(engine.backups.count == 1 ? "backup" : "backups")")
+                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
             }
-            if engine.backups.isEmpty {
-                Text("None yet. Before you change a setting in FORScan, save that module's As-Built to drive O:. It is your way back.")
-                    .font(.caption).foregroundStyle(.orange)
-            } else {
-                ForEach(engine.backups.prefix(3), id: \.self) { url in
-                    Button { engine.reveal(url) } label: {
-                        HStack {
-                            Text(url.deletingPathExtension().lastPathComponent).lineLimit(1).truncationMode(.middle)
-                            Spacer()
-                            Text(modified(url)).font(.caption).foregroundStyle(.secondary)
+            Text("FORScan sees this folder as drive O:. Drop files anywhere on this window.")
+                .font(.caption).foregroundStyle(.secondary)
+            if !engine.files.isEmpty {
+                VStack(spacing: 2) {
+                    ForEach(engine.files.prefix(4), id: \.self) { url in
+                        Button { engine.reveal(url) } label: {
+                            HStack(spacing: 8) {
+                                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path)).resizable().frame(width: 16, height: 16)
+                                Text(url.lastPathComponent).lineLimit(1).truncationMode(.middle)
+                                if Engine.isBackup(url) {
+                                    Text("Backup").font(.caption2).padding(.horizontal, 6).padding(.vertical, 1)
+                                        .background(Color.green.opacity(0.18), in: Capsule())
+                                }
+                                Spacer()
+                                Text(modified(url)).font(.caption).foregroundStyle(.secondary)
+                            }
+                            .contentShape(Rectangle())
+                            .padding(.vertical, 3)
                         }
-                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
+                        .help("Show in Finder")
                     }
-                    .buttonStyle(.plain)
-                    .help("Show in Finder")
+                    if engine.files.count > 4 {
+                        Text("+ \(engine.files.count - 4) more").font(.caption).foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
             }
+            if engine.backups.isEmpty {
+                Label("No As-Built backup yet. Save one before you change any setting.", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption).foregroundStyle(.orange)
+            }
+            HStack {
+                Button("Add Files…") { engine.pickFiles() }
+                Button("Open Folder") { engine.openFilesFolder() }
+                Spacer()
+                Button("How to back up") { showBackupHelp = true }
+                    .buttonStyle(.link)
+                    .popover(isPresented: $showBackupHelp, arrowEdge: .bottom) { BackupHelp() }
+            }
+            .controlSize(.small)
         }
         .padding(14)
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
@@ -399,7 +489,24 @@ struct BackupsCard: View {
 
     private func modified(_ url: URL) -> String {
         let d = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date()
-        return d.formatted(date: .abbreviated, time: .shortened)
+        return d.formatted(date: .abbreviated, time: .omitted)
+    }
+}
+
+struct BackupHelp: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Save an As-Built backup").font(.headline)
+            Text("1. Open FORScan and connect to the car.")
+            Text("2. Go to Configuration and programming, pick the module you will change (for example BCM), and start its As-Built format.")
+            Text("3. In the As-Built editor, click Save and choose drive O:.")
+            Text("The backup then shows up here. To undo a change, load it the same way and write it back.")
+                .foregroundStyle(.secondary)
+        }
+        .font(.callout)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(width: 320)
+        .padding(16)
     }
 }
 
@@ -417,72 +524,6 @@ struct BrandButtonStyle: ButtonStyle {
             .foregroundStyle(scheme == .dark ? espresso : bone)
             .background(scheme == .dark ? bone : espresso, in: RoundedRectangle(cornerRadius: 9))
             .opacity(enabled ? (configuration.isPressed ? 0.8 : 1) : 0.5)
-    }
-}
-
-/// The folder FORScan sees as drive O:. Drop files in, see what FORScan saved there.
-struct FilesCard: View {
-    @EnvironmentObject var engine: Engine
-    @State private var targeted = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label("Files for FORScan", systemImage: "folder").fontWeight(.medium)
-                Spacer()
-                Text("drive O:")
-                    .font(.system(.caption, design: .monospaced))
-                    .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 4))
-            }
-            VStack(spacing: 4) {
-                Image(systemName: "arrow.down.doc").font(.title2).foregroundStyle(targeted ? Color.accentColor : .secondary)
-                Text("Drop license keys, As-Built backups or profiles here").font(.callout)
-                Text("In FORScan, open or save files on drive O:").font(.caption).foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-                    .foregroundStyle(targeted ? Color.accentColor : Color.secondary.opacity(0.4))
-            )
-            .dropDestination(for: URL.self) { urls, _ in
-                engine.addFiles(urls)
-                return true
-            } isTargeted: { targeted = $0 }
-
-            if !engine.otherFiles.isEmpty {
-                VStack(spacing: 0) {
-                    ForEach(engine.otherFiles.prefix(3), id: \.self) { url in
-                        Button { engine.reveal(url) } label: {
-                            HStack(spacing: 8) {
-                                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                                    .resizable().frame(width: 16, height: 16)
-                                Text(url.lastPathComponent).lineLimit(1).truncationMode(.middle)
-                                Spacer()
-                                Text(url.pathExtension.uppercased()).font(.caption2).foregroundStyle(.secondary)
-                            }
-                            .contentShape(Rectangle())
-                            .padding(.vertical, 4)
-                        }
-                        .buttonStyle(.plain)
-                        .help("Show in Finder")
-                    }
-                    if engine.otherFiles.count > 3 {
-                        Text("+ \(engine.otherFiles.count - 3) more").font(.caption).foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 2)
-                    }
-                }
-            }
-            HStack {
-                Button("Add Files…") { engine.pickFiles() }
-                Spacer()
-                Button("Open Folder") { engine.openFilesFolder() }
-            }
-        }
-        .padding(14)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
     }
 }
 
