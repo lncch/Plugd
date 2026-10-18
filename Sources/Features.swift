@@ -62,8 +62,8 @@ extension Engine {
 
     /// Another program has the port open. Checked in poll(), not on every redraw.
     nonisolated static func portHeld(_ port: String?) -> Bool {
-        // The test emulator (OBDOCK_PORT) always holds its own pty open, so skip the check there.
-        guard let port, ProcessInfo.processInfo.environment["OBDOCK_PORT"] == nil else { return false }
+        // The test emulator (PLUGD_PORT) always holds its own pty open, so skip the check there.
+        guard let port, ProcessInfo.processInfo.environment["PLUGD_PORT"] == nil else { return false }
         return !shell("/usr/sbin/lsof", ["-t", port]).out.isEmpty
     }
 
@@ -168,18 +168,18 @@ extension Engine {
 
     // MARK: - Problem report
 
-    /// Writes a report with OBDock's and FORScan's logs, with the license key and hardware id removed.
+    /// Writes a report with Plugd's and FORScan's logs, with the license key and hardware id removed.
     @discardableResult
     func saveReport(open: Bool = true) -> URL? {
         let reg = (try? String(contentsOf: prefix.appendingPathComponent("user.reg"), encoding: .utf8)).map { Self.forscanRegistry($0) } ?? [:]
         let info = Bundle.main.infoDictionary
         var r = """
-        OBDock \(info?["CFBundleShortVersionString"] ?? "?") (\(info?["CFBundleVersion"] ?? "?")) · macOS \(ProcessInfo.processInfo.operatingSystemVersionString)
+        Plugd \(info?["CFBundleShortVersionString"] ?? "?") (\(info?["CFBundleVersion"] ?? "?")) · macOS \(ProcessInfo.processInfo.operatingSystemVersionString)
         Rosetta \(rosetta == .done ? "yes" : "no") · Wine \(wine == .done ? "yes" : "no") · FORScan \(installedVersion ?? "not installed")
         Adapter: \(port ?? "none") \(chip ?? "") \(adapter?.version ?? "") \(adapter?.volts ?? "")
         License: \(license?.expires == nil ? "standard" : "extended")
 
-        --- OBDock log ---
+        --- Plugd log ---
         \(log.joined(separator: "\n"))
         """
         if let flog = forscanLog(), let data = try? Data(contentsOf: flog) {
@@ -189,9 +189,9 @@ extension Engine {
         r = Self.redact(r, secrets: [reg["Key"], reg["Id"]].compactMap { $0 })
 
         let f = Self.isoFormatter("yyyy-MM-dd HHmm")
-        let dir = ProcessInfo.processInfo.environment["OBDOCK_HOME"] != nil
+        let dir = ProcessInfo.processInfo.environment["PLUGD_HOME"] != nil
             ? base : FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Desktop")
-        let out = dir.appendingPathComponent("OBDock report \(f.string(from: Date())).txt")
+        let out = dir.appendingPathComponent("Plugd report \(f.string(from: Date())).txt")
         do { try r.write(to: out, atomically: true, encoding: .utf8) } catch {
             notice = "Could not save the report: \(error.localizedDescription)"
             return nil
@@ -199,7 +199,7 @@ extension Engine {
         say("Report saved: \(out.path)")
         if open {
             reveal(out)
-            NSWorkspace.shared.open(URL(string: "https://github.com/lncch/OBDock/issues/new")!)
+            NSWorkspace.shared.open(URL(string: "https://github.com/lncch/Plugd/issues/new")!)
             notice = "Report saved on your Desktop. The license key and hardware id were removed.\n\nAttach it to the GitHub issue that just opened."
         }
         return out

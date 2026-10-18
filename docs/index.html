@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OBDock: FORScan on Mac</title>
+<title>Plugd: FORScan on Mac</title>
 <meta name="description" content="Run FORScan on an Apple Silicon Mac. Free, no Windows, no virtual machine. Reads and As-Built writes tested on a real Ford.">
 <link rel="icon" href="img/icon.png?v=0.3.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -86,51 +86,51 @@ footer p + p { margin-top: 8px; }
 <body>
 <div class="wrap">
   <nav>
-    <a class="brand" href="#"><img src="img/mark.svg?v=0.3.0" alt="">OBDock</a>
+    <a class="brand" href="#"><img src="img/mark.svg?v=0.3.0" alt="">Plugd</a>
     <div class="links">
       <a href="#how">How it works</a>
       <a href="#tested">Tested</a>
       <a href="#faq">FAQ</a>
-      <a href="https://github.com/lncch/OBDock">GitHub</a>
+      <a href="https://github.com/lncch/Plugd">GitHub</a>
     </div>
   </nav>
 
   <header class="hero">
-    <img class="hero-icon" src="img/icon.png?v=0.3.0" alt="OBDock app icon">
+    <img class="hero-icon" src="img/icon.png?v=0.3.0" alt="Plugd app icon">
     <span class="pill"><b>●</b> Reads and As-Built writes tested on a real Ford</span>
     <h1>FORScan on your Mac.<br>No Windows needed.</h1>
-    <p>OBDock sets up everything FORScan needs on an Apple Silicon Mac, finds your OBD adapter, and opens FORScan with one click. Free.</p>
+    <p>Plugd sets up everything FORScan needs on an Apple Silicon Mac, finds your OBD adapter, and opens FORScan with one click. Free.</p>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/lncch/OBDock/releases/latest/download/OBDock.dmg">Download for Mac</a>
-      <a class="btn" href="https://github.com/lncch/OBDock">View source</a>
+      <a class="btn primary" href="https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg">Download for Mac</a>
+      <a class="btn" href="https://github.com/lncch/Plugd">View source</a>
     </div>
     <p class="req">Apple Silicon · macOS 14 or later · USB OBD adapter · v0.2.1</p>
   </header>
 
   <div class="shots">
-    <figure><img src="img/setup.png?v=0.3.0" alt="OBDock one-time setup screen with Rosetta, Wine and FORScan steps"><figcaption>One-time setup, about 2 minutes</figcaption></figure>
-    <figure><img src="img/main.png?v=0.3.0" alt="OBDock main screen with adapter status and Open FORScan button"><figcaption>Open FORScan, check engine codes, keep backups</figcaption></figure>
+    <figure><img src="img/setup.png?v=0.3.0" alt="Plugd one-time setup screen with Rosetta, Wine and FORScan steps"><figcaption>One-time setup, about 2 minutes</figcaption></figure>
+    <figure><img src="img/main.png?v=0.3.0" alt="Plugd main screen with adapter status and Open FORScan button"><figcaption>Open FORScan, check engine codes, keep backups</figcaption></figure>
   </div>
 </div>
 
 <section id="how">
   <div class="wrap">
     <h2>How it works</h2>
-    <p class="lead">FORScan is a Windows app. OBDock runs it with Wine, a free layer that runs Windows programs on macOS, and connects it to your adapter.</p>
+    <p class="lead">FORScan is a Windows app. Plugd runs it with Wine, a free layer that runs Windows programs on macOS, and connects it to your adapter.</p>
     <div class="steps">
       <div class="step"><h3>Set up once</h3><p>Installs Rosetta, downloads Wine, and gets the official FORScan installer from forscan.org. You read and accept FORScan's license.</p></div>
-      <div class="step"><h3>Plug in</h3><p>OBDock spots your USB adapter and maps it to COM1, the port FORScan expects. Changed USB ports? It remaps.</p></div>
+      <div class="step"><h3>Plug in</h3><p>Plugd spots your USB adapter and maps it to COM1, the port FORScan expects. Changed USB ports? It remaps.</p></div>
       <div class="step"><h3>Open FORScan</h3><p>The full Windows FORScan, with its Extended license, configuration, and As-Built editing.</p></div>
     </div>
     <div class="steps" style="grid-template-columns:1fr 1fr">
-      <div class="step"><h3>Files on drive O:</h3><p>Drag license keys, As-Built backups or profiles into OBDock. FORScan sees them on drive O:. Anything FORScan saves to O: lands in Documents/OBDock on your Mac.</p></div>
+      <div class="step"><h3>Files on drive O:</h3><p>Drag license keys, As-Built backups or profiles into Plugd. FORScan sees them on drive O:. Anything FORScan saves to O: lands in Documents/Plugd on your Mac.</p></div>
       <div class="step"><h3>Quick engine check</h3><p>Read the engine's error codes and the battery voltage in a few seconds, without opening FORScan.</p></div>
       <div class="step"><h3>Backups in sight</h3><p>Lists your As-Built backups by date, and warns you when there are none before you change a setting.</p></div>
       <div class="step"><h3>Stays current</h3><p>Shows when your FORScan Extended license runs out, and updates FORScan from forscan.org in one click.</p></div>
     </div>
     <div class="diagram"><pre><b>FORScan.exe</b> ──▶ Wine (COM1) ──▶ <b>/dev/cu.usbserial</b> ──▶ OBD adapter ──▶ car (HS-CAN / MS-CAN)
          ▲
-   OBDock: setup, port mapping, start and stop</pre></div>
+   Plugd: setup, port mapping, start and stop</pre></div>
   </div>
 </section>
 
@@ -160,8 +160,8 @@ footer p + p { margin-top: 8px; }
     <h2>FAQ</h2>
     <details>
       <summary>macOS says the app "cannot be opened"</summary>
-      <p>OBDock isn't notarized by Apple yet. To open it the first time:</p>
-      <ol><li>Try to open OBDock once and close the warning.</li><li>Open System Settings → Privacy &amp; Security.</li><li>Scroll down and click <b>Open Anyway</b> next to OBDock.</li></ol>
+      <p>Plugd isn't notarized by Apple yet. To open it the first time:</p>
+      <ol><li>Try to open Plugd once and close the warning.</li><li>Open System Settings → Privacy &amp; Security.</li><li>Scroll down and click <b>Open Anyway</b> next to Plugd.</li></ol>
     </details>
     <details id="adapters">
       <summary>Which adapters work?</summary>
@@ -173,15 +173,15 @@ footer p + p { margin-top: 8px; }
     </details>
     <details>
       <summary>Do I need a FORScan license?</summary>
-      <p>Reading codes works with the free Standard license. Changing settings needs the Extended license (a free 2-month trial at forscan.org). The key is tied to the computer's hardware ID, so get a key for the hardware ID FORScan shows on your Mac. Drop the key into OBDock's Files box, then in FORScan open About → Load key and pick it from drive <b>O:</b>.</p>
+      <p>Reading codes works with the free Standard license. Changing settings needs the Extended license (a free 2-month trial at forscan.org). The key is tied to the computer's hardware ID, so get a key for the hardware ID FORScan shows on your Mac. Drop the key into Plugd's Files box, then in FORScan open About → Load key and pick it from drive <b>O:</b>.</p>
     </details>
     <details>
       <summary>Is it safe to write settings?</summary>
-      <p>Writing settings can break a module if it goes wrong. Save a backup of each module's As-Built data first, keep a battery charger on, and don't change values you don't understand. OBDock passes FORScan's commands through and doesn't change them, but you use it at your own risk.</p>
+      <p>Writing settings can break a module if it goes wrong. Save a backup of each module's As-Built data first, keep a battery charger on, and don't change values you don't understand. Plugd passes FORScan's commands through and doesn't change them, but you use it at your own risk.</p>
     </details>
     <details>
-      <summary>Does OBDock include FORScan?</summary>
-      <p>No. OBDock downloads the official installer from forscan.org on your Mac. FORScan's installer crashes inside Wine today, so OBDock unpacks that same installer and copies its files unchanged.</p>
+      <summary>Does Plugd include FORScan?</summary>
+      <p>No. Plugd downloads the official installer from forscan.org on your Mac. FORScan's installer crashes inside Wine today, so Plugd unpacks that same installer and copies its files unchanged.</p>
     </details>
     <details>
       <summary>Will it keep working on future macOS versions?</summary>
@@ -192,8 +192,8 @@ footer p + p { margin-top: 8px; }
 
 <footer>
   <div class="wrap">
-    <p>FORScan is made by Alexey Savin (forscan.org). OBDock is an independent project, not affiliated with FORScan, Ford or Mazda.</p>
-    <p>Built by Almoayyad Abuljdail · <a href="https://github.com/lncch/OBDock">Source on GitHub</a></p>
+    <p>FORScan is made by Alexey Savin (forscan.org). Plugd is an independent project, not affiliated with FORScan, Ford or Mazda.</p>
+    <p>Built by Almoayyad Abuljdail · <a href="https://github.com/lncch/Plugd">Source on GitHub</a></p>
   </div>
 </footer>
 </body>

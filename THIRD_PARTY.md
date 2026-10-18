@@ -1,6 +1,6 @@
 # Third-party software
 
-OBDock downloads or bundles these. It ships none of FORScan's files.
+Plugd downloads or bundles these. It ships none of FORScan's files.
 
 | Software | How it is used | License |
 |---|---|---|

@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct OBDockApp: App {
+struct PlugdApp: App {
     @StateObject private var engine = Engine()
 
     init() {
@@ -25,7 +25,7 @@ struct OBDockApp: App {
             print(fails.isEmpty ? "SELF-TEST OK" : fails.joined(separator: "\n"))
             exit(fails.isEmpty ? 0 : 1)
         }
-        // Test hook: the same path as the window: auto-read the adapter at OBDOCK_PORT, then press Check.
+        // Test hook: the same path as the window: auto-read the adapter at PLUGD_PORT, then press Check.
         if CommandLine.arguments.contains("--headless-adapter") {
             let e = Engine()
             Task { @MainActor in
@@ -49,7 +49,7 @@ struct OBDockApp: App {
             }
             RunLoop.main.run()
         }
-        // Test hook: write a problem report into OBDOCK_HOME, print its path.
+        // Test hook: write a problem report into PLUGD_HOME, print its path.
         if CommandLine.arguments.contains("--headless-report") {
             let e = Engine()
             print("REPORT=" + (e.saveReport(open: false)?.path ?? "none"))
@@ -79,7 +79,7 @@ struct OBDockApp: App {
     }
 
     var body: some Scene {
-        Window("OBDock", id: "main") {
+        Window("Plugd", id: "main") {
             ContentView()
                 .environmentObject(engine)
                 .frame(width: 480)
@@ -88,10 +88,10 @@ struct OBDockApp: App {
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("About OBDock") { Self.showAbout() }
+                Button("About Plugd") { Self.showAbout() }
             }
             CommandGroup(replacing: .help) {
-                Link("OBDock on GitHub", destination: URL(string: "https://github.com/lncch/OBDock")!)
+                Link("Plugd on GitHub", destination: URL(string: "https://github.com/lncch/Plugd")!)
                 Button("Report a Problem…") { engine.saveReport() }
                 Divider()
                 Link("FORScan Website", destination: URL(string: "https://forscan.org")!)
@@ -103,10 +103,10 @@ struct OBDockApp: App {
         let text = """
         Runs FORScan on Apple Silicon Macs with Wine.
         Open source under the MIT license.
-        github.com/lncch/OBDock
+        github.com/lncch/Plugd
 
         FORScan is made by Alexey Savin (forscan.org).
-        OBDock is not affiliated with FORScan, Ford or Mazda.
+        Plugd is not affiliated with FORScan, Ford or Mazda.
         Uses Wine (LGPL) and innoextract (zlib).
         """
         let para = NSMutableParagraphStyle()
@@ -168,14 +168,14 @@ struct ContentView: View {
         HStack(spacing: 10) {
             Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 28, height: 28)
                 .accessibilityHidden(true)
-            Text("OBDock").font(.headline)
+            Text("Plugd").font(.headline)
             Spacer()
             Menu {
                 Button("Report a Problem…") { engine.saveReport() }
                 Link("Which adapter do I need?", destination: Links.adapters)
-                Link("OBDock on GitHub", destination: Links.github)
+                Link("Plugd on GitHub", destination: Links.github)
                 Divider()
-                Button("About OBDock") { OBDockApp.showAbout() }
+                Button("About Plugd") { PlugdApp.showAbout() }
             } label: {
                 Image(systemName: "questionmark.circle")
             }
@@ -188,8 +188,8 @@ struct ContentView: View {
 }
 
 enum Links {
-    static let github = URL(string: "https://github.com/lncch/OBDock")!
-    static let adapters = URL(string: "https://obdock.almoayyad.dev/#adapters")!
+    static let github = URL(string: "https://github.com/lncch/Plugd")!
+    static let adapters = URL(string: "https://plugd.almoayyad.dev/#adapters")!
 }
 
 // MARK: - Setup
@@ -220,7 +220,7 @@ struct SetupPanel: View {
             }
             .buttonStyle(BrandButtonStyle())
             .disabled(engine.busy)
-            Text("FORScan is made by Alexey Savin (forscan.org). OBDock is not affiliated with FORScan or Ford.")
+            Text("FORScan is made by Alexey Savin (forscan.org). Plugd is not affiliated with FORScan or Ford.")
                 .font(.caption2).foregroundStyle(.secondary)
         }
     }

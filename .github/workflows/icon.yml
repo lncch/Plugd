@@ -1,0 +1,21 @@
+# Compiles brand/Plugd.icon (light, dark and tinted looks) into Assets.car.
+# actool ships only with Xcode, so this runs on GitHub's Mac runners; commit the result to brand/.
+name: icon
+on:
+  workflow_dispatch:
+  push:
+    paths: [brand/Plugd.icon/**]
+jobs:
+  compile:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -version
+      - run: |
+          mkdir out
+          xcrun actool brand/Plugd.icon --compile out --app-icon Plugd --include-all-app-icons \
+            --platform macosx --target-device mac --minimum-deployment-target 14.0 \
+            --output-partial-info-plist out/partial.plist --output-format human-readable-text
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with: { name: icon, path: out }

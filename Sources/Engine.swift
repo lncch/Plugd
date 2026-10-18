@@ -5,7 +5,7 @@ enum StepState: Equatable {
     case waiting, running(String), done, failed(String)
 }
 
-/// Everything OBDock does outside its window: Rosetta, Wine, FORScan, the adapter.
+/// Everything Plugd does outside its window: Rosetta, Wine, FORScan, the adapter.
 @MainActor
 final class Engine: ObservableObject {
     // Wine build verified with FORScan and a real car on 2026-10-18.
@@ -52,18 +52,20 @@ final class Engine: ObservableObject {
     var ready: Bool { rosetta == .done && wine == .done && forscan == .done }
 
     init() {
-        // OBDOCK_HOME lets a test run start from an empty folder.
-        if let home = ProcessInfo.processInfo.environment["OBDOCK_HOME"] {
+        // PLUGD_HOME lets a test run start from an empty folder.
+        if let home = ProcessInfo.processInfo.environment["PLUGD_HOME"] {
             base = URL(fileURLWithPath: home)
             filesDir = base.appendingPathComponent("Files")
         } else {
-            filesDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents/OBDock")
+            filesDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents/Plugd")
             let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            base = support.appendingPathComponent("OBDock")
-            // The app was called ScanBridge in 0.1.0; keep that setup instead of downloading again.
-            let old = support.appendingPathComponent("ScanBridge")
-            if !FileManager.default.fileExists(atPath: base.path), FileManager.default.fileExists(atPath: old.path) {
-                try? FileManager.default.moveItem(at: old, to: base)
+            base = support.appendingPathComponent("Plugd")
+            // The app was called ScanBridge (0.1) and OBDock (0.2); keep that setup and those files.
+            let fm = FileManager.default
+            for (old, new) in [(support.appendingPathComponent("OBDock"), base), (support.appendingPathComponent("ScanBridge"), base),
+                               (filesDir.deletingLastPathComponent().appendingPathComponent("OBDock"), filesDir)]
+            where !fm.fileExists(atPath: new.path) && fm.fileExists(atPath: old.path) {
+                try? fm.moveItem(at: old, to: new)
             }
         }
         refreshSteps()
@@ -92,8 +94,8 @@ final class Engine: ObservableObject {
     func poll() {
         let oldPort = port, wasRunning = running
         defer { pollChanged(oldPort: oldPort, wasRunning: wasRunning) }
-        // OBDOCK_PORT lets a test use a fake adapter (e.g. ELM327-emulator's pty).
-        if let fake = ProcessInfo.processInfo.environment["OBDOCK_PORT"] {
+        // PLUGD_PORT lets a test use a fake adapter (e.g. ELM327-emulator's pty).
+        if let fake = ProcessInfo.processInfo.environment["PLUGD_PORT"] {
             port = fake
         } else {
             let names = (try? FileManager.default.contentsOfDirectory(atPath: "/dev")) ?? []
