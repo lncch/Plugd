@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct PlugdApp: App {
+    @NSApplicationDelegateAdaptor private var delegate: AppDelegate
     @StateObject private var engine = Engine()
     @AppStorage("showMenuBar") private var showMenuBar = true
 
@@ -124,6 +125,23 @@ struct PlugdApp: App {
         ])
         NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
         NSApp.activate(ignoringOtherApps: true)
+    }
+}
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// With the menu bar item on, closing the window leaves Plugd running there.
+    func applicationShouldTerminateAfterLastWindowClosed(_ app: NSApplication) -> Bool {
+        let d = UserDefaults.standard
+        return d.object(forKey: "showMenuBar") != nil && !d.bool(forKey: "showMenuBar")
+    }
+
+    func applicationDidFinishLaunching(_ note: Notification) {
+        // Test hook: PLUGD_CLOSE_WINDOW closes the window after 3 s.
+        if ProcessInfo.processInfo.environment["PLUGD_CLOSE_WINDOW"] != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                NSApp.windows.first { $0.styleMask.contains(.closable) && $0.frame.width > 300 }?.close()
+            }
+        }
     }
 }
 
