@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct PlugdApp: App {
     @StateObject private var engine = Engine()
+    @AppStorage("showMenuBar") private var showMenuBar = true
 
     init() {
         // Test hook: run the whole setup with no window, print the log, exit.
@@ -89,12 +90,20 @@ struct PlugdApp: App {
             CommandGroup(replacing: .appInfo) {
                 Button("About Plugd") { Self.showAbout() }
             }
+            CommandGroup(after: .appSettings) {
+                Toggle("Show in Menu Bar", isOn: $showMenuBar)
+            }
             CommandGroup(replacing: .help) {
                 Link("Plugd on GitHub", destination: URL(string: "https://github.com/lncch/Plugd")!)
                 Button("Report a Problem…") { engine.saveReport() }
                 Divider()
                 Link("FORScan Website", destination: URL(string: "https://forscan.org")!)
             }
+        }
+        MenuBarExtra(isInserted: $showMenuBar) {
+            MenuBarMenu().environmentObject(engine)
+        } label: {
+            Image(nsImage: MenuBarMenu.icon)
         }
     }
 
