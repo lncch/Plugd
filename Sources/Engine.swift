@@ -10,7 +10,7 @@ enum StepState: Equatable {
 final class Engine: ObservableObject {
     // Wine build verified with FORScan and a real car on 2026-10-18.
     static let wineURL = URL(string: "https://github.com/Gcenx/macOS_Wine_builds/releases/download/11.18/wine-staging-11.18-osx64.tar.xz")!
-    static let forscanPage = URL(string: "https://forscan.org/download.html")!
+    nonisolated static let forscanPage = URL(string: "https://forscan.org/download.html")!
     static let portPrefixes = ["cu.usbserial", "cu.wchusbserial", "cu.usbmodem", "cu.SLAB_USBtoUART"]
 
     let base: URL
@@ -36,6 +36,14 @@ final class Engine: ObservableObject {
     @Published var notice: String?
     @Published var log: [String] = []
     @Published var files: [URL] = []
+    @Published var adapter: ELM.Info?    // read while FORScan is closed
+    @Published var chip: String?
+    @Published var serialBusy = false
+    @Published var portHeld = false
+    @Published var codes: ELM.Codes?
+    @Published var license: License?
+    @Published var installedVersion: String?
+    @Published var latestVersion: String?
 
     private var eulaAnswer: CheckedContinuation<Bool, Never>?
     private var timer: Timer?
@@ -58,7 +66,10 @@ final class Engine: ObservableObject {
             }
         }
         refreshSteps()
+        readLicense()
+        readInstalledVersion()
         poll()
+        Task { await checkForscanUpdate() }
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.poll() }
         }
@@ -75,6 +86,8 @@ final class Engine: ObservableObject {
     }
 
     func poll() {
+        let oldPort = port, wasRunning = running
+        defer { pollChanged(oldPort: oldPort, wasRunning: wasRunning) }
         // OBDOCK_PORT lets a test use a fake adapter (e.g. ELM327-emulator's pty).
         if let fake = ProcessInfo.processInfo.environment["OBDOCK_PORT"] {
             port = fake
@@ -83,6 +96,7 @@ final class Engine: ObservableObject {
             port = names.filter { n in Self.portPrefixes.contains { n.hasPrefix($0) } }.sorted().first.map { "/dev/" + $0 }
         }
         running = Self.forscanRunning(in: forscanDir)
+        if !serialBusy { portHeld = Self.portHeld(port) }
         refreshFiles()
     }
 
@@ -120,7 +134,7 @@ final class Engine: ObservableObject {
 
     func setUp() async {
         busy = true
-        defer { busy = false; refreshSteps() }
+        defer { busy = false; refreshSteps(); readInstalledVersion(); readLicense() }
         do {
             if rosetta != .done { try await installRosetta() }
             if wine != .done { try await installWine() }
@@ -170,16 +184,14 @@ final class Engine: ObservableObject {
         say("Wine ready")
     }
 
-    private func installForscan() async throws {
+    func installForscan() async throws {
         let fm = FileManager.default
         forscan = .running("Finding the latest FORScan…")
         let (html, _) = try await URLSession.shared.data(from: Self.forscanPage)
-        let page = String(decoding: html, as: UTF8.self)
-        guard let m = page.range(of: #"download/FORScanSetup[0-9.]+\.release\.exe"#, options: .regularExpression) else {
+        guard let installerURL = Self.installerLink(String(decoding: html, as: UTF8.self)) else {
             forscan = .failed("Download link not found")
             throw Fail("No installer link on forscan.org")
         }
-        let installerURL = URL(string: String(page[m]), relativeTo: Self.forscanPage)!.absoluteURL
         let installer = downloads.appendingPathComponent(installerURL.lastPathComponent)
         if !fm.fileExists(atPath: installer.path) {
             try await download(installerURL, to: installer, label: "Downloading FORScan") { self.forscan = .running($0) }
@@ -202,19 +214,22 @@ final class Engine: ObservableObject {
 
         // 1. The official installer. Wine 11 crashes inside it today, but try first in case a later Wine fixes it.
         forscan = .running("Running the official installer…")
+        // On an update FORScan.exe already exists, so "worked" means the installer wrote a new one.
+        let mtime = { (try? fm.attributesOfItem(atPath: self.forscanExe.path)[.modificationDate]) as? Date }
+        let before = mtime()
         _ = await wineRun("wine", [installer.path, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-"], timeout: 120)
         // When it crashes, its helper process hangs on; stop everything in this Wine folder.
         _ = await wineRun("wineserver", ["-k"])
-        if fm.fileExists(atPath: forscanExe.path) {
+        if let after = mtime(), after != before {
             say("Official installer worked")
         } else {
-            // 2. Fallback: place the installer's own files, unchanged.
+            // 2. Fallback: place the installer's own files, unchanged. Copy over, never delete, so an update keeps anything else in the folder.
             say("Official installer failed under Wine, copying its files instead")
             forscan = .running("Copying FORScan files…")
-            try? fm.removeItem(at: forscanDir)
-            try fm.createDirectory(at: forscanDir.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try fm.copyItem(at: unpacked.appendingPathComponent("app"), to: forscanDir)
-            try trimTrailingSpaces(in: forscanDir)
+            try copyOver(unpacked.appendingPathComponent("app"), to: forscanDir)
+        }
+        if let v = Self.setupVersion(installer.lastPathComponent) {
+            try? v.write(to: base.appendingPathComponent("forscan-version.txt"), atomically: true, encoding: .utf8)
         }
         try? fm.removeItem(at: unpacked)
         guard fm.fileExists(atPath: forscanExe.path) else { forscan = .failed("FORScan.exe missing"); throw Fail("FORScan.exe missing") }
@@ -222,12 +237,20 @@ final class Engine: ObservableObject {
         say("FORScan ready")
     }
 
-    /// innoextract keeps a trailing space in "FORScan.exe ", which Wine cannot open.
-    private func trimTrailingSpaces(in dir: URL) throws {
+    /// Copies a folder tree over another, replacing files with the same name.
+    /// innoextract keeps a trailing space in "FORScan.exe ", which Wine cannot open, so names are trimmed.
+    private func copyOver(_ src: URL, to dst: URL) throws {
         let fm = FileManager.default
-        for name in try fm.contentsOfDirectory(atPath: dir.path) where name != name.trimmingCharacters(in: .whitespaces) {
-            try fm.moveItem(at: dir.appendingPathComponent(name),
-                            to: dir.appendingPathComponent(name.trimmingCharacters(in: .whitespaces)))
+        try fm.createDirectory(at: dst, withIntermediateDirectories: true)
+        for name in try fm.contentsOfDirectory(atPath: src.path) {
+            let from = src.appendingPathComponent(name), to = dst.appendingPathComponent(name.trimmingCharacters(in: .whitespaces))
+            var isDir: ObjCBool = false
+            if fm.fileExists(atPath: from.path, isDirectory: &isDir), isDir.boolValue {
+                try copyOver(from, to: to)
+            } else {
+                try? fm.removeItem(at: to)
+                try fm.copyItem(at: from, to: to)
+            }
         }
     }
 
@@ -356,9 +379,9 @@ final class Engine: ObservableObject {
 
     // MARK: - Helpers
 
-    private func say(_ s: String) { log.append(s) }
+    func say(_ s: String) { log.append(s) }
 
-    private func wineEnv() -> [String: String] {
+    func wineEnv() -> [String: String] {
         var env = ProcessInfo.processInfo.environment
         env["WINEPREFIX"] = prefix.path
         env["WINEDEBUG"] = "-all"
@@ -366,7 +389,7 @@ final class Engine: ObservableObject {
         return env
     }
 
-    private func wineRun(_ tool: String, _ args: [String], timeout: TimeInterval = 300) async -> (code: Int32, out: String) {
+    func wineRun(_ tool: String, _ args: [String], timeout: TimeInterval = 300) async -> (code: Int32, out: String) {
         await Self.run(wineBin.appendingPathComponent(tool).path, args, env: wineEnv(), timeout: timeout)
     }
 

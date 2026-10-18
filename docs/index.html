@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OBDock: FORScan on Mac</title>
 <meta name="description" content="Run FORScan on an Apple Silicon Mac. Free, no Windows, no virtual machine. Reads and As-Built writes tested on a real Ford.">
-<link rel="icon" href="img/icon.png?v=0.2.1">
+<link rel="icon" href="img/icon.png?v=0.3.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -38,7 +38,7 @@ h1 { font-size: clamp(36px, 7vw, 64px); line-height: 1.05; letter-spacing: -0.04
 .btn:not(.primary):hover { border-color: #333; }
 .req { margin-top: 16px; font-size: 13px; color: var(--dim); }
 
-.shots { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0 96px; }
+.shots { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 16px; margin: 24px 0 96px; }
 .shots figure { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
 .shots img { width: 100%; height: auto; display: block; border-radius: 8px; }
 .shots figcaption { color: var(--dim); font-size: 13px; margin-top: 10px; text-align: center; }
@@ -86,7 +86,7 @@ footer p + p { margin-top: 8px; }
 <body>
 <div class="wrap">
   <nav>
-    <a class="brand" href="#"><img src="img/mark.svg?v=0.2.1" alt="">OBDock</a>
+    <a class="brand" href="#"><img src="img/mark.svg?v=0.3.0" alt="">OBDock</a>
     <div class="links">
       <a href="#how">How it works</a>
       <a href="#tested">Tested</a>
@@ -96,7 +96,7 @@ footer p + p { margin-top: 8px; }
   </nav>
 
   <header class="hero">
-    <img class="hero-icon" src="img/icon.png?v=0.2.1" alt="OBDock app icon">
+    <img class="hero-icon" src="img/icon.png?v=0.3.0" alt="OBDock app icon">
     <span class="pill"><b>●</b> Reads and As-Built writes tested on a real Ford</span>
     <h1>FORScan on your Mac.<br>No Windows needed.</h1>
     <p>OBDock sets up everything FORScan needs on an Apple Silicon Mac, finds your OBD adapter, and opens FORScan with one click. Free.</p>
@@ -108,8 +108,8 @@ footer p + p { margin-top: 8px; }
   </header>
 
   <div class="shots">
-    <figure><img src="img/setup.png?v=0.2.1" alt="OBDock one-time setup screen with Rosetta, Wine and FORScan steps"><figcaption>One-time setup, about 2 minutes</figcaption></figure>
-    <figure><img src="img/main.png?v=0.2.1" alt="OBDock main screen with adapter status and Open FORScan button"><figcaption>Plug in, click Open FORScan</figcaption></figure>
+    <figure><img src="img/setup.png?v=0.3.0" alt="OBDock one-time setup screen with Rosetta, Wine and FORScan steps"><figcaption>One-time setup, about 2 minutes</figcaption></figure>
+    <figure><img src="img/main.png?v=0.3.0" alt="OBDock main screen with adapter status and Open FORScan button"><figcaption>Adapter, license, engine codes and backups at a glance</figcaption></figure>
   </div>
 </div>
 
@@ -122,8 +122,11 @@ footer p + p { margin-top: 8px; }
       <div class="step"><h3>Plug in</h3><p>OBDock spots your USB adapter and maps it to COM1, the port FORScan expects. Changed USB ports? It remaps.</p></div>
       <div class="step"><h3>Open FORScan</h3><p>The full Windows FORScan, with its Extended license, configuration, and As-Built editing.</p></div>
     </div>
-    <div class="steps" style="grid-template-columns:1fr">
+    <div class="steps" style="grid-template-columns:1fr 1fr">
       <div class="step"><h3>Files on drive O:</h3><p>Drag license keys, As-Built backups or profiles into OBDock. FORScan sees them on drive O:. Anything FORScan saves to O: lands in Documents/OBDock on your Mac.</p></div>
+      <div class="step"><h3>Quick engine check</h3><p>Read the engine's error codes and the battery voltage in a few seconds, without opening FORScan.</p></div>
+      <div class="step"><h3>Backups in sight</h3><p>Lists your As-Built backups by date, and warns you when there are none before you change a setting.</p></div>
+      <div class="step"><h3>Stays current</h3><p>Shows when your FORScan Extended license runs out, and updates FORScan from forscan.org in one click.</p></div>
     </div>
     <div class="diagram"><pre><b>FORScan.exe</b> ──▶ Wine (COM1) ──▶ <b>/dev/cu.usbserial</b> ──▶ OBD adapter ──▶ car (HS-CAN / MS-CAN)
          ▲

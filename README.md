@@ -10,6 +10,14 @@
 
 OBDock sets up Wine, downloads FORScan from forscan.org, maps your USB OBD adapter to COM1, and opens FORScan with one button.
 
+It also:
+
+- reads the engine's error codes and the battery voltage straight from the adapter, without opening FORScan
+- shows your adapter (USB chip, ELM version) and when your FORScan Extended license runs out
+- lists As-Built backups on drive O: and warns when there are none
+- updates FORScan from forscan.org in one click
+- saves a problem report with the license key and hardware id removed (Help → Report a Problem)
+
 ## Install
 
 1. Download `OBDock.zip`, unzip it, and move OBDock to Applications.
@@ -34,6 +42,10 @@ Needs the Xcode command line tools, `brew install innoextract dylibbundler`.
 
     OBDOCK_HOME=/tmp/empty OBDock.app/Contents/MacOS/OBDock --headless-setup
     OBDOCK_HOME=/tmp/empty OBDOCK_PORT=/dev/ttys008 OBDock.app/Contents/MacOS/OBDock --headless-open
+    OBDOCK_PORT=/dev/ttys008 OBDock.app/Contents/MacOS/OBDock --headless-adapter   # version, voltage, engine codes
+    OBDOCK_HOME=/tmp/empty OBDock.app/Contents/MacOS/OBDock --headless-update
+    OBDOCK_HOME=/tmp/empty OBDock.app/Contents/MacOS/OBDock --headless-report
+    OBDock.app/Contents/MacOS/OBDock --self-test                                   # code parser, key removal, dates
 
 `OBDOCK_PORT` points at a fake adapter such as ELM327-emulator's pseudo-terminal.
 
