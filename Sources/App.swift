@@ -91,8 +91,8 @@ struct PlugdApp: App {
             CommandGroup(replacing: .appInfo) {
                 Button("About Plugd") { Self.showAbout() }
             }
-            CommandGroup(after: .appSettings) {
-                Toggle("Show in Menu Bar", isOn: $showMenuBar)
+            CommandGroup(replacing: .appSettings) {
+                SettingsButton()
             }
             CommandGroup(replacing: .help) {
                 Link("Plugd on GitHub", destination: URL(string: "https://github.com/lncch/Plugd")!)
@@ -128,14 +128,40 @@ struct PlugdApp: App {
     }
 }
 
+extension Notification.Name {
+    static let showSettings = Notification.Name("showSettings")
+}
+
+/// Plugd → Settings… (⌘,) opens the window on the Settings page.
+struct SettingsButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Settings…") {
+            openWindow(id: "main")
+            NSApp.activate(ignoringOtherApps: true)
+            NotificationCenter.default.post(name: .showSettings, object: nil)
+        }
+        .keyboardShortcut(",")
+    }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// With the menu bar item on, closing the window leaves Plugd running there.
     func applicationShouldTerminateAfterLastWindowClosed(_ app: NSApplication) -> Bool {
-        let d = UserDefaults.standard
-        return d.object(forKey: "showMenuBar") != nil && !d.bool(forKey: "showMenuBar")
+        !Settings.showMenuBar
+    }
+
+    func applicationWillFinishLaunching(_ note: Notification) {
+        Settings.applyDock()
     }
 
     func applicationDidFinishLaunching(_ note: Notification) {
+        // Started by "Open at login": stay in the menu bar, don't pop the window up.
+        let event = NSAppleEventManager.shared().currentAppleEvent
+        if event?.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem, Settings.showMenuBar {
+            DispatchQueue.main.async { NSApp.windows.filter { $0.frame.width > 300 }.forEach { $0.close() } }
+        }
         // Test hook: PLUGD_CLOSE_WINDOW closes the window after 3 s.
         if ProcessInfo.processInfo.environment["PLUGD_CLOSE_WINDOW"] != nil {
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -154,7 +180,9 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if !seenWelcome {
+            if page == .settings && !engine.ready {
+                ScrollView { SettingsPage().frame(maxWidth: 560).padding(40) }.frame(maxWidth: .infinity)
+            } else if !seenWelcome {
                 WelcomeView { seenWelcome = true }
             } else if !engine.ready {
                 SetupPanel().frame(maxWidth: 520).padding(40)
@@ -164,6 +192,7 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 780, minHeight: 540)
+        .onReceive(NotificationCenter.default.publisher(for: .showSettings)) { _ in page = .settings }
         .toolbar {
             ToolbarItem(placement: .primaryAction) { helpMenu }
         }
@@ -215,6 +244,7 @@ struct ContentView: View {
                     case .codes: CodesCard()
                     case .files: FilesCard()
                     case .guide: GuidePage()
+                    case .settings: SettingsPage()
                     }
                 }
                 .padding(32)
@@ -242,7 +272,7 @@ struct ContentView: View {
 }
 
 enum Page: String, CaseIterable, Identifiable {
-    case home, codes, files, guide
+    case home, codes, files, guide, settings
     var id: Self { self }
 
     var title: String {
@@ -251,6 +281,7 @@ enum Page: String, CaseIterable, Identifiable {
         case .codes: "Engine codes"
         case .files: "Files & backups"
         case .guide: "How to use"
+        case .settings: "Settings"
         }
     }
 
@@ -260,6 +291,7 @@ enum Page: String, CaseIterable, Identifiable {
         case .codes: "A quick look at the engine's trouble codes, without FORScan."
         case .files: "License keys, profiles and As-Built backups. FORScan sees them as drive O:."
         case .guide: "Short steps for the things people do most."
+        case .settings: "How Plugd starts and where it shows up."
         }
     }
 
@@ -269,6 +301,7 @@ enum Page: String, CaseIterable, Identifiable {
         case .codes: "engine.combustion"
         case .files: "folder"
         case .guide: "book"
+        case .settings: "gearshape"
         }
     }
 }

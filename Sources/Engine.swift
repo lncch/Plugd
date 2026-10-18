@@ -75,7 +75,7 @@ final class Engine: ObservableObject {
         readLicense()
         readInstalledVersion()
         poll()
-        Task { await checkForscanUpdate() }
+        if Settings.checkUpdates { Task { await checkForscanUpdate() } }
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.poll() }
         }
