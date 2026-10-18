@@ -82,10 +82,9 @@ struct PlugdApp: App {
         Window("Plugd", id: "main") {
             ContentView()
                 .environmentObject(engine)
-                .frame(width: 480)
-                .fixedSize(horizontal: false, vertical: true)
         }
-        .windowResizability(.contentSize)
+        .defaultSize(width: 880, height: 600)
+        .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Plugd") { Self.showAbout() }
@@ -121,26 +120,28 @@ struct PlugdApp: App {
 
 struct ContentView: View {
     @EnvironmentObject var engine: Engine
-    @State private var showLog = false
+    @AppStorage("seenWelcome") private var seenWelcome = false
+    // PLUGD_PAGE opens a page directly, for screenshots.
+    @State private var page: Page? = Page(rawValue: ProcessInfo.processInfo.environment["PLUGD_PAGE"] ?? "") ?? .home
     @State private var dropTargeted = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            header
-            if engine.ready { MainPanel() } else { SetupPanel() }
-            DisclosureGroup("Details", isExpanded: $showLog) {
+        Group {
+            if !seenWelcome {
+                WelcomeView { seenWelcome = true }
+            } else if !engine.ready {
                 ScrollView {
-                    Text(engine.log.joined(separator: "\n"))
-                        .font(.system(.caption, design: .monospaced))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .textSelection(.enabled)
+                    SetupPanel().frame(maxWidth: 520).padding(40)
                 }
-                .frame(height: 90)
+                .frame(maxWidth: .infinity)
+            } else {
+                main
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
         }
-        .padding(20)
+        .frame(minWidth: 780, minHeight: 540)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) { helpMenu }
+        }
         // Files can be dropped anywhere on the window once FORScan is set up.
         .dropDestination(for: URL.self) { urls, _ in
             guard engine.ready else { return false }
@@ -164,26 +165,302 @@ struct ContentView: View {
         }
     }
 
-    private var header: some View {
-        HStack(spacing: 10) {
-            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 28, height: 28)
-                .accessibilityHidden(true)
-            Text("Plugd").font(.headline)
-            Spacer()
-            Menu {
-                Button("Report a Problem…") { engine.saveReport() }
-                Link("Which adapter do I need?", destination: Links.adapters)
-                Link("Plugd on GitHub", destination: Links.github)
-                Divider()
-                Button("About Plugd") { PlugdApp.showAbout() }
-            } label: {
-                Image(systemName: "questionmark.circle")
+    private var main: some View {
+        NavigationSplitView {
+            List(Page.allCases, selection: $page) { p in
+                Label(p.title, systemImage: p.icon).tag(p)
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .help("Help")
+            .navigationSplitViewColumnWidth(200)
+            .safeAreaInset(edge: .bottom) {
+                Text("Plugd \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")")
+                    .font(.caption).foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+            }
+        } detail: {
+            let current = page ?? .home
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(current.title).font(.largeTitle.weight(.bold))
+                        Text(current.subtitle).foregroundStyle(.secondary)
+                    }
+                    switch current {
+                    case .home: HomePage(page: $page)
+                    case .codes: CodesCard()
+                    case .files: FilesCard()
+                    case .guide: GuidePage()
+                    }
+                }
+                .padding(32)
+                .frame(maxWidth: 640, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .navigationTitle(current.title)
         }
+    }
+
+    private var helpMenu: some View {
+        Menu {
+            if engine.ready { Button("How to Use Plugd") { seenWelcome = true; page = .guide } }
+            Button("Show Welcome") { seenWelcome = false }
+            Link("Which adapter do I need?", destination: Links.adapters)
+            Divider()
+            Button("Report a Problem…") { engine.saveReport() }
+            Link("Plugd on GitHub", destination: Links.github)
+            Button("About Plugd") { PlugdApp.showAbout() }
+        } label: {
+            Label("Help", systemImage: "questionmark.circle")
+        }
+        .help("Help")
+    }
+}
+
+enum Page: String, CaseIterable, Identifiable {
+    case home, codes, files, guide
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .home: "Home"
+        case .codes: "Engine codes"
+        case .files: "Files & backups"
+        case .guide: "How to use"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .home: "Plug in your adapter and open FORScan."
+        case .codes: "A quick look at the engine's trouble codes, without FORScan."
+        case .files: "License keys, profiles and As-Built backups. FORScan sees them as drive O:."
+        case .guide: "Short steps for the things people do most."
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .home: "house"
+        case .codes: "engine.combustion"
+        case .files: "folder"
+        case .guide: "book"
+        }
+    }
+}
+
+struct HomePage: View {
+    @EnvironmentObject var engine: Engine
+    @Binding var page: Page?
+    @State private var showLog = false
+
+    var body: some View {
+        ForscanCard()
+        HStack(spacing: 12) {
+            SummaryTile(title: "Engine codes", value: codesValue, icon: "engine.combustion", warn: codesWarn) { page = .codes }
+            SummaryTile(title: "Backups", value: engine.backups.isEmpty ? "None yet" : "\(engine.backups.count) saved",
+                        icon: "externaldrive", warn: engine.backups.isEmpty) { page = .files }
+        }
+        DisclosureGroup("Details", isExpanded: $showLog) {
+            ScrollView {
+                Text(engine.log.joined(separator: "\n"))
+                    .font(.system(.caption, design: .monospaced))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+            }
+            .frame(height: 120)
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+
+    private var codesValue: String {
+        switch engine.codes {
+        case .ok(let s, let p): s.isEmpty && p.isEmpty ? "No codes" : "\(s.count + p.count) found"
+        case .checking: "Checking…"
+        case .failed: "Check failed"
+        case nil: "Not checked"
+        }
+    }
+
+    private var codesWarn: Bool {
+        if case .ok(let s, let p) = engine.codes { return !(s.isEmpty && p.isEmpty) }
+        return false
+    }
+}
+
+/// A small card on Home that opens another page.
+struct SummaryTile: View {
+    let title: String
+    let value: String
+    let icon: String
+    let warn: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon).font(.title2).foregroundStyle(.secondary).frame(width: 28)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.caption).foregroundStyle(.secondary)
+                    Text(value).font(.headline).foregroundStyle(warn ? .orange : .primary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity)
+            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Welcome
+
+/// Shown once before setup. "Show Welcome" in the Help menu brings it back.
+struct WelcomeView: View {
+    let done: () -> Void
+    // PLUGD_WELCOME_STEP opens a page directly, for screenshots.
+    @State private var step = Int(ProcessInfo.processInfo.environment["PLUGD_WELCOME_STEP"] ?? "") ?? 0
+    private let last = 2
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            Group {
+                switch step {
+                case 0: intro
+                case 1: needs
+                default: how
+                }
+            }
+            .frame(maxWidth: 520)
+            .padding(.horizontal, 40)
+            Spacer()
+            HStack {
+                Button("Skip", action: done).buttonStyle(.link).opacity(step < last ? 1 : 0)
+                    .frame(width: 220, alignment: .leading)
+                Spacer()
+                HStack(spacing: 8) {
+                    ForEach(0...last, id: \.self) { i in
+                        Circle().fill(i == step ? Color.primary : Color.secondary.opacity(0.35)).frame(width: 7, height: 7)
+                    }
+                }
+                .accessibilityLabel("Page \(step + 1) of \(last + 1)")
+                Spacer()
+                HStack(spacing: 10) {
+                    if step > 0 { Button("Back") { step -= 1 }.controlSize(.large) }
+                    Button(step < last ? "Continue" : "Get Started") { step < last ? (step += 1) : done() }
+                        .buttonStyle(BrandButtonStyle())
+                        .frame(width: 130)
+                        .keyboardShortcut(.defaultAction)
+                }
+                .frame(width: 220, alignment: .trailing)
+            }
+            .padding(24)
+        }
+    }
+
+    private var intro: some View {
+        VStack(spacing: 16) {
+            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 112, height: 112)
+                .accessibilityHidden(true)
+            Text("Welcome to Plugd").font(.largeTitle.weight(.bold))
+            Text("FORScan on your Mac. Read codes, change car settings and keep backups, with no Windows laptop.")
+                .font(.title3).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var needs: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            Text("What you need").font(.largeTitle.weight(.bold))
+            WelcomeRow(icon: "cable.connector", title: "A USB OBD adapter",
+                       detail: "An ELM327 with an HS/MS switch works. It plugs in under the dashboard.")
+            WelcomeRow(icon: "car.fill", title: "A Ford, Lincoln or Mazda",
+                       detail: "Turn the ignition on. The engine can stay off.")
+            WelcomeRow(icon: "key.fill", title: "A FORScan license",
+                       detail: "Reading works without one. To change settings, get a free Extended license at forscan.org.")
+            Link("Which adapter do I need?", destination: Links.adapters).font(.callout)
+        }
+    }
+
+    private var how: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            Text("How it works").font(.largeTitle.weight(.bold))
+            WelcomeRow(icon: "1.circle.fill", title: "Set up once", detail: "Plugd downloads FORScan and what it needs. About 2 minutes.")
+            WelcomeRow(icon: "2.circle.fill", title: "Plug in and open FORScan", detail: "Plugd finds your adapter and connects FORScan to it.")
+            WelcomeRow(icon: "3.circle.fill", title: "Back up before you change anything", detail: "Save an As-Built backup. Plugd keeps it safe and shows it under Files.")
+        }
+    }
+}
+
+struct WelcomeRow: View {
+    let icon: String
+    let title: String
+    let detail: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            Image(systemName: icon).font(.title).foregroundStyle(.secondary).frame(width: 36)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.headline)
+                Text(detail).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
+
+// MARK: - How to use
+
+struct GuidePage: View {
+    var body: some View {
+        GuideCard(title: "Connect to your car", icon: "car.fill", steps: [
+            "Plug the adapter into the OBD port under the dashboard, then into your Mac.",
+            "Turn the ignition on. Set the adapter switch to HS.",
+            "On Home, click Open FORScan. In FORScan, click Connect at the bottom.",
+            "If FORScan asks you to switch to MS or HS, flip the switch and click OK.",
+        ])
+        GuideCard(title: "Load a license key", icon: "key.fill", steps: [
+            "Drop the .key file on the Plugd window.",
+            "In FORScan, open About (the i button) and click Load key.",
+            "Pick the key on drive O:. You do this once; the key stays.",
+        ])
+        GuideCard(title: "Back up before a change", icon: "externaldrive", steps: [
+            "Connect, then open Configuration and programming.",
+            "Pick the module you will change (for example BCM) and start its As-Built format.",
+            "Click Save and choose drive O:. The backup shows up under Files & backups.",
+        ])
+        GuideCard(title: "Undo a change", icon: "arrow.uturn.backward", steps: [
+            "Open the same module's As-Built format.",
+            "Click Load, pick your backup on drive O:, then Write.",
+        ])
+        GuideCard(title: "Stay safe while writing", icon: "bolt.fill", steps: [
+            "Connect a battery charger before you write settings.",
+            "Do not turn the car off or unplug the adapter during a write.",
+        ])
+    }
+}
+
+struct GuideCard: View {
+    let title: String
+    let icon: String
+    let steps: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(title, systemImage: icon).font(.headline)
+            ForEach(Array(steps.enumerated()), id: \.offset) { i, step in
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("\(i + 1)").font(.callout.monospacedDigit().weight(.semibold)).foregroundStyle(.secondary).frame(width: 14)
+                    Text(step).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
     }
 }
 
@@ -199,6 +476,8 @@ struct SetupPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 64, height: 64)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text("Set up FORScan on this Mac").font(.title3.weight(.semibold))
                 Text("One time, about 2 minutes and a 230 MB download. You will read and accept FORScan's license. macOS may ask for your password to install Rosetta.")
@@ -261,18 +540,6 @@ struct StepRow: View {
 }
 
 // MARK: - Main
-
-struct MainPanel: View {
-    @EnvironmentObject var engine: Engine
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ForscanCard()
-            CodesCard()
-            FilesCard()
-        }
-    }
-}
 
 /// Adapter, Open FORScan, then license and version: the one thing people open the app for.
 struct ForscanCard: View {
@@ -441,11 +708,11 @@ struct FilesCard: View {
                 Text("\(engine.files.count) \(engine.files.count == 1 ? "file" : "files") · \(engine.backups.count) \(engine.backups.count == 1 ? "backup" : "backups")")
                     .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
             }
-            Text("FORScan sees this folder as drive O:. Drop files anywhere on this window.")
+            Text("Drop files anywhere on this window, or use Add Files.")
                 .font(.caption).foregroundStyle(.secondary)
             if !engine.files.isEmpty {
                 VStack(spacing: 2) {
-                    ForEach(engine.files.prefix(4), id: \.self) { url in
+                    ForEach(engine.files, id: \.self) { url in
                         Button { engine.reveal(url) } label: {
                             HStack(spacing: 8) {
                                 Image(nsImage: NSWorkspace.shared.icon(forFile: url.path)).resizable().frame(width: 16, height: 16)
@@ -462,10 +729,6 @@ struct FilesCard: View {
                         }
                         .buttonStyle(.plain)
                         .help("Show in Finder")
-                    }
-                    if engine.files.count > 4 {
-                        Text("+ \(engine.files.count - 4) more").font(.caption).foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
             }
