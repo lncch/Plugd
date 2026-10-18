@@ -42,6 +42,11 @@ final class Engine: ObservableObject {
     @Published var portHeld = false
     @Published var codes: ELM.Codes?
     @Published var codesCheckedAt: Date?
+    /// Dashboard: latest value per mode-01 PID, the PIDs the car supports, and the reading loop.
+    @Published var live: [UInt8: Double] = [:]
+    @Published var liveSupported: [UInt8]?
+    @Published var liveError: String?
+    var liveTask: Task<Void, Never>?
     @Published var license: License?
     @Published var installedVersion: String?
     @Published var latestVersion: String?
@@ -284,6 +289,7 @@ final class Engine: ObservableObject {
 
     func openForscan() async {
         guard !running else { return }
+        await stopLive()   // FORScan needs the adapter to itself
         busy = true
         defer { busy = false }
         if let port, port != mappedPort {

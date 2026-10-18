@@ -21,7 +21,7 @@ struct PlugdApp: App {
         }
         // Test hook: run the parser and redaction checks, exit 1 on any failure.
         if CommandLine.arguments.contains("--self-test") {
-            var fails = DTC.selfTest() + Engine.redactSelfTest()
+            var fails = DTC.selfTest() + Engine.redactSelfTest() + ELM.liveSelfTest()
             if Engine.setupVersion("FORScanSetup2.3.71.release.exe") != "2.3.71" { fails.append("setupVersion") }
             if !Engine.older("2.3.9", "2.3.71") || Engine.older("2.3.71", "2.3.71") { fails.append("older") }
             print(fails.isEmpty ? "SELF-TEST OK" : fails.joined(separator: "\n"))
@@ -36,6 +36,22 @@ struct PlugdApp: App {
                 print(e.log.joined(separator: "\n"))
                 print("INFO=\(String(describing: e.adapter)) CODES=\(String(describing: e.codes))")
                 exit(e.adapter != nil && e.codes != nil ? 0 : 1)
+            }
+            RunLoop.main.run()
+        }
+        // Test hook: run the Dashboard for 10 s against PLUGD_PORT, print what it read.
+        if CommandLine.arguments.contains("--headless-live") {
+            let e = Engine()
+            Task { @MainActor in
+                for _ in 0..<50 where e.adapter == nil || e.serialBusy { try? await Task.sleep(nanoseconds: 200_000_000) }
+                e.startLive()
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
+                await e.stopLive()
+                print(e.log.joined(separator: "\n"))
+                print("SUPPORTED=\(e.liveSupported?.map { String(format: "%02X", $0) } ?? [])")
+                for p in ELM.pids where e.live[p.id] != nil { print("\(p.name)=\(e.live[p.id]!) \(p.unit)") }
+                print("ERROR=\(e.liveError ?? "none") BUSY=\(e.serialBusy)")
+                exit(e.live.isEmpty ? 1 : 0)
             }
             RunLoop.main.run()
         }
@@ -193,6 +209,7 @@ struct ContentView: View {
         }
         .frame(minWidth: 780, minHeight: 540)
         .onReceive(NotificationCenter.default.publisher(for: .showSettings)) { _ in page = .settings }
+        .onChange(of: page) { if page != .dashboard { Task { await engine.stopLive() } } }
         .toolbar {
             ToolbarItem(placement: .primaryAction) { helpMenu }
         }
@@ -241,6 +258,7 @@ struct ContentView: View {
                     }
                     switch current {
                     case .home: HomePage(page: $page)
+                    case .dashboard: DashboardPage()
                     case .codes: CodesCard()
                     case .files: FilesCard()
                     case .guide: GuidePage()
@@ -272,12 +290,13 @@ struct ContentView: View {
 }
 
 enum Page: String, CaseIterable, Identifiable {
-    case home, codes, files, guide, settings
+    case home, dashboard, codes, files, guide, settings
     var id: Self { self }
 
     var title: String {
         switch self {
         case .home: "Home"
+        case .dashboard: "Dashboard"
         case .codes: "Engine codes"
         case .files: "Files & backups"
         case .guide: "How to use"
@@ -288,6 +307,7 @@ enum Page: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .home: "Plug in your adapter and open FORScan."
+        case .dashboard: "Live readings from your car, while FORScan is closed."
         case .codes: "A quick look at the engine's trouble codes, without FORScan."
         case .files: "License keys, profiles and As-Built backups. FORScan sees them as drive O:."
         case .guide: "Short steps for the things people do most."
@@ -298,6 +318,7 @@ enum Page: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .home: "house"
+        case .dashboard: "gauge.with.dots.needle.50percent"
         case .codes: "engine.combustion"
         case .files: "folder"
         case .guide: "book"

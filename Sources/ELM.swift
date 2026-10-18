@@ -161,3 +161,86 @@ extension String {
             .filter { !$0.isEmpty }
     }
 }
+
+// MARK: - Live readings (mode 01)
+
+extension ELM {
+    /// One standard OBD-II reading and how to turn its data bytes into a number.
+    struct PID: Sendable {
+        let id: UInt8
+        let name: String
+        let unit: String
+        var bytes = 1
+        let value: @Sendable ([Double]) -> Double
+    }
+
+    /// Shown in this order when the car supports them.
+    static let pids: [PID] = [
+        PID(id: 0x0C, name: "Engine speed", unit: "rpm", bytes: 2) { ($0[0] * 256 + $0[1]) / 4 },
+        PID(id: 0x0D, name: "Speed", unit: "km/h") { $0[0] },
+        PID(id: 0x05, name: "Coolant", unit: "°C") { $0[0] - 40 },
+        PID(id: 0x42, name: "Battery", unit: "V", bytes: 2) { ($0[0] * 256 + $0[1]) / 1000 },
+        PID(id: 0x04, name: "Engine load", unit: "%") { $0[0] * 100 / 255 },
+        PID(id: 0x11, name: "Throttle", unit: "%") { $0[0] * 100 / 255 },
+        PID(id: 0x2F, name: "Fuel level", unit: "%") { $0[0] * 100 / 255 },
+        PID(id: 0x5C, name: "Oil temp", unit: "°C") { $0[0] - 40 },
+        PID(id: 0x0F, name: "Intake air", unit: "°C") { $0[0] - 40 },
+        PID(id: 0x46, name: "Outside air", unit: "°C") { $0[0] - 40 },
+        PID(id: 0x0B, name: "Intake pressure", unit: "kPa") { $0[0] },
+        PID(id: 0x10, name: "Air flow", unit: "g/s", bytes: 2) { ($0[0] * 256 + $0[1]) / 100 },
+        PID(id: 0x5E, name: "Fuel rate", unit: "L/h", bytes: 2) { ($0[0] * 256 + $0[1]) / 20 },
+        PID(id: 0x06, name: "Short fuel trim", unit: "%") { ($0[0] - 128) * 100 / 128 },
+        PID(id: 0x07, name: "Long fuel trim", unit: "%") { ($0[0] - 128) * 100 / 128 },
+        PID(id: 0x1F, name: "Engine running", unit: "min", bytes: 2) { ($0[0] * 256 + $0[1]) / 60 },
+        PID(id: 0x31, name: "Since codes cleared", unit: "km", bytes: 2) { $0[0] * 256 + $0[1] },
+    ]
+
+    /// The data bytes of a "41 <pid> …" reply, or nil. The first module that answers wins.
+    static func mode01Data(_ text: String, pid: UInt8) -> [UInt8]? {
+        for line in text.elmLines {
+            let b = line.split(separator: " ").compactMap { UInt8($0, radix: 16) }
+            if b.count > 2, b[0] == 0x41, b[1] == pid { return Array(b.dropFirst(2)) }
+        }
+        return nil
+    }
+
+    /// PIDs listed in a 0100/0120/0140… bit mask: the top bit is base+1.
+    static func supportedPIDs(_ mask: [UInt8], base: UInt8) -> [UInt8] {
+        mask.prefix(4).enumerated().flatMap { i, byte in
+            (0..<8).compactMap { bit in byte & (0x80 >> bit) != 0 ? base + UInt8(i * 8 + bit) + 1 : nil }
+        }
+    }
+
+    /// Asks which mode-01 PIDs the car supports. The first request also finds the car's protocol.
+    func supported() -> [UInt8]? {
+        _ = send("ATSP0")
+        _ = send("ATH0")
+        var all: [UInt8] = []
+        var base: UInt8 = 0
+        while true {
+            let reply = send(String(format: "01%02X", base), timeout: base == 0 ? 15 : 3)
+            guard let mask = Self.mode01Data(reply, pid: base) else { return base == 0 ? nil : all }
+            let found = Self.supportedPIDs(mask, base: base)
+            all += found.filter { $0 % 0x20 != 0 }
+            // The last PID of each block says whether the next block exists.
+            guard found.contains(base + 0x20), base < 0xC0 else { return all }
+            base += 0x20
+        }
+    }
+
+    func value(of pid: PID) -> Double? {
+        guard let b = Self.mode01Data(send(String(format: "01%02X", pid.id)), pid: pid.id), b.count >= pid.bytes else { return nil }
+        return pid.value(b.map(Double.init))
+    }
+
+    static func liveSelfTest() -> [String] {
+        var fails: [String] = []
+        let s = supportedPIDs([0xBE, 0x1F, 0xA8, 0x13], base: 0)
+        if !(s.contains(0x0C) && s.contains(0x20) && !s.contains(0x02) && s.contains(0x1F)) { fails.append("supportedPIDs \(s)") }
+        if supportedPIDs([0x80, 0, 0, 0], base: 0x20) != [0x21] { fails.append("supportedPIDs base 0x20") }
+        let rpm = pids.first { $0.id == 0x0C }!
+        if let b = mode01Data("SEARCHING...\n41 0C 1A F8\n41 0C 00 00", pid: 0x0C), rpm.value(b.map(Double.init)) != 1726 { fails.append("rpm") }
+        if mode01Data("NO DATA", pid: 0x0C) != nil { fails.append("NO DATA parsed") }
+        return fails
+    }
+}
