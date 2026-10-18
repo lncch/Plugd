@@ -12,7 +12,7 @@ I have a Ford Taurus, and every time I wanted to turn a feature on or off with F
 
 So I vibe coded this app. It runs FORScan on my Mac through Wine (free software that runs Windows programs), and it does the annoying setup for you. You click Set Up, plug in your adapter, and click Open FORScan.
 
-I've used it on my own car to read all 22 modules FORScan found and to change settings, and the changes worked.
+I've used it on my own car and it works.
 
 ## What it does
 
