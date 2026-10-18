@@ -21,6 +21,9 @@ final class Engine: ObservableObject {
     var forscanDir: URL { driveC.appendingPathComponent("Program Files (x86)/FORScan") }
     var forscanExe: URL { forscanDir.appendingPathComponent("FORScan.exe") }
     var downloads: URL { base.appendingPathComponent("downloads") }
+    /// Shared with FORScan as drive O: (license keys, As-Built backups, profiles).
+    let filesDir: URL
+    static let filesDrive = "o:"
 
     @Published var rosetta: StepState = .waiting
     @Published var wine: StepState = .waiting
@@ -32,6 +35,7 @@ final class Engine: ObservableObject {
     @Published var eulaText: String?
     @Published var notice: String?
     @Published var log: [String] = []
+    @Published var files: [URL] = []
 
     private var eulaAnswer: CheckedContinuation<Bool, Never>?
     private var timer: Timer?
@@ -42,7 +46,9 @@ final class Engine: ObservableObject {
         // OBDOCK_HOME lets a test run start from an empty folder.
         if let home = ProcessInfo.processInfo.environment["OBDOCK_HOME"] {
             base = URL(fileURLWithPath: home)
+            filesDir = base.appendingPathComponent("Files")
         } else {
+            filesDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents/OBDock")
             let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             base = support.appendingPathComponent("OBDock")
             // The app was called ScanBridge in 0.1.0; keep that setup instead of downloading again.
@@ -72,12 +78,21 @@ final class Engine: ObservableObject {
         // OBDOCK_PORT lets a test use a fake adapter (e.g. ELM327-emulator's pty).
         if let fake = ProcessInfo.processInfo.environment["OBDOCK_PORT"] {
             port = fake
-            running = Self.forscanRunning(in: forscanDir)
-            return
+        } else {
+            let names = (try? FileManager.default.contentsOfDirectory(atPath: "/dev")) ?? []
+            port = names.filter { n in Self.portPrefixes.contains { n.hasPrefix($0) } }.sorted().first.map { "/dev/" + $0 }
         }
-        let names = (try? FileManager.default.contentsOfDirectory(atPath: "/dev")) ?? []
-        port = names.filter { n in Self.portPrefixes.contains { n.hasPrefix($0) } }.sorted().first.map { "/dev/" + $0 }
         running = Self.forscanRunning(in: forscanDir)
+        refreshFiles()
+    }
+
+    func refreshFiles() {
+        let keys: [URLResourceKey] = [.contentModificationDateKey, .isRegularFileKey]
+        let all = (try? FileManager.default.contentsOfDirectory(at: filesDir, includingPropertiesForKeys: keys,
+                                                                 options: [.skipsHiddenFiles])) ?? []
+        let date = { (u: URL) in (try? u.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast }
+        let sorted = all.sorted { date($0) > date($1) }
+        if sorted != files { files = sorted }
     }
 
     nonisolated static func rosettaInstalled() -> Bool {
@@ -148,6 +163,7 @@ final class Engine: ObservableObject {
         wine = .running("Creating Windows folder…")
         let r = await wineRun("wineboot", ["--init"])
         guard fm.fileExists(atPath: driveC.path) else { wine = .failed("Wine did not start"); throw Fail("wineboot: \(r.out.suffix(300))") }
+        linkFilesDrive()
         // No crash dialogs if a Windows program dies.
         _ = await wineRun("wine", ["reg", "add", "HKCU\\Software\\Wine\\WineDbg", "/v", "ShowCrashDialog", "/t", "REG_DWORD", "/d", "0", "/f"])
         wine = .done
@@ -250,6 +266,7 @@ final class Engine: ObservableObject {
         } else if port == nil {
             say("No adapter plugged in. FORScan opens but cannot connect.")
         }
+        linkFilesDrive()
         let p = Process()
         p.executableURL = wineBin.appendingPathComponent("wine")
         p.arguments = ["FORScan.exe"]
@@ -274,22 +291,68 @@ final class Engine: ObservableObject {
         say("FORScan closed")
     }
 
-    func importKey() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.data]
-        panel.message = "Choose your FORScan license key (.key)"
-        guard panel.runModal() == .OK, let src = panel.url else { return }
-        let dst = driveC.appendingPathComponent(src.lastPathComponent)
-        try? FileManager.default.removeItem(at: dst)
+    // MARK: - Files (drive O:)
+
+    /// Makes the files folder appear in FORScan as drive O:.
+    func linkFilesDrive() {
+        let fm = FileManager.default
+        try? fm.createDirectory(at: filesDir, withIntermediateDirectories: true)
+        let dosdevices = prefix.appendingPathComponent("dosdevices")
+        guard fm.fileExists(atPath: dosdevices.path) else { return }
+        let link = dosdevices.appendingPathComponent(Self.filesDrive).path
+        if (try? fm.destinationOfSymbolicLink(atPath: link)) == filesDir.path { return }
+        try? fm.removeItem(atPath: link)
         do {
-            try FileManager.default.copyItem(at: src, to: dst)
-            notice = "Key copied to C:\\\(src.lastPathComponent)\n\nIn FORScan: click the last icon on the left (About), then Load key, then pick it from C:."
+            try fm.createSymbolicLink(atPath: link, withDestinationPath: filesDir.path)
+            say("Drive O: → \(filesDir.path)")
         } catch {
-            notice = "Could not copy the key: \(error.localizedDescription)"
+            say("Could not create drive O: \(error.localizedDescription)")
         }
     }
 
-    func revealFiles() { NSWorkspace.shared.activateFileViewerSelecting([base]) }
+    /// Copies files into the shared folder. Never overwrites: a clash gets " 2", " 3"…
+    func addFiles(_ urls: [URL]) {
+        let fm = FileManager.default
+        try? fm.createDirectory(at: filesDir, withIntermediateDirectories: true)
+        var added: [String] = []
+        for src in urls where (try? src.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true {
+            if src.deletingLastPathComponent().standardizedFileURL == filesDir.standardizedFileURL { continue }
+            var dst = filesDir.appendingPathComponent(src.lastPathComponent)
+            var n = 2
+            while fm.fileExists(atPath: dst.path) {
+                let stem = src.deletingPathExtension().lastPathComponent, ext = src.pathExtension
+                dst = filesDir.appendingPathComponent(ext.isEmpty ? "\(stem) \(n)" : "\(stem) \(n).\(ext)")
+                n += 1
+            }
+            do {
+                try fm.copyItem(at: src, to: dst)
+                added.append(dst.lastPathComponent)
+                say("Added O:\\\(dst.lastPathComponent)")
+            } catch {
+                say("Could not add \(src.lastPathComponent): \(error.localizedDescription)")
+            }
+        }
+        refreshFiles()
+        if let key = added.first(where: { $0.lowercased().hasSuffix(".key") }) {
+            notice = "License key added as O:\\\(key)\n\nIn FORScan: click the last icon on the left (About), then Load key, and pick it from drive O:."
+        }
+    }
+
+    func pickFiles() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.message = "Choose files for FORScan: license keys, As-Built backups, profiles"
+        guard panel.runModal() == .OK else { return }
+        addFiles(panel.urls)
+    }
+
+    func openFilesFolder() {
+        try? FileManager.default.createDirectory(at: filesDir, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(filesDir)
+    }
+
+    func reveal(_ url: URL) { NSWorkspace.shared.activateFileViewerSelecting([url]) }
 
     // MARK: - Helpers
 

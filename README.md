@@ -1,4 +1,4 @@
-<p align="center"><img src="site/img/icon.png" width="128" alt="OBDock icon"></p>
+<p align="center"><img src="docs/img/icon.png" width="128" alt="OBDock icon"></p>
 
 <h1 align="center">OBDock</h1>
 
@@ -6,7 +6,7 @@
 
 <p align="center"><a href="https://github.com/lncch/OBDock/releases/latest/download/OBDock.zip"><b>Download for Mac</b></a> · macOS 14+ · Apple Silicon · USB OBD adapter</p>
 
-<p align="center"><img src="site/img/setup.png" width="420" alt="Setup screen"> <img src="site/img/main.png" width="420" alt="Main screen"></p>
+<p align="center"><img src="docs/img/setup.png" width="420" alt="Setup screen"> <img src="docs/img/main.png" width="420" alt="Main screen"></p>
 
 OBDock sets up Wine, downloads FORScan from forscan.org, maps your USB OBD adapter to COM1, and opens FORScan with one button.
 
@@ -16,6 +16,7 @@ OBDock sets up Wine, downloads FORScan from forscan.org, maps your USB OBD adapt
 2. Open it. macOS blocks it the first time because it isn't notarized yet: open System Settings → Privacy & Security and click **Open Anyway**.
 3. Click **Set Up** and accept FORScan's license (about 2 minutes, ~230 MB download).
 4. Plug in your adapter and click **Open FORScan**.
+5. To give FORScan a file (license key, As-Built backup, profile), drop it on OBDock's **Files** box. FORScan sees it on drive **O:**. Files FORScan saves to O: show up in `Documents/OBDock`.
 
 ## Tested
 

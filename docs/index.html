@@ -45,7 +45,8 @@ section { padding: 72px 0; border-top: 1px solid var(--line); }
 h2 { font-size: 28px; letter-spacing: -0.02em; font-weight: 600; }
 .lead { color: var(--muted); margin-top: 8px; max-width: 620px; }
 
-.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; counter-reset: s; }
+.steps { display: grid; margin-bottom: 16px; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; }
+#how { counter-reset: s; }
 .step { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
 .step::before { counter-increment: s; content: "0" counter(s); font: 500 12px "Geist Mono", monospace; color: var(--dim); }
 .step h3 { font-size: 16px; font-weight: 600; margin: 10px 0 6px; }
@@ -100,7 +101,7 @@ footer p + p { margin-top: 8px; }
       <a class="btn primary" href="https://github.com/lncch/OBDock/releases/latest/download/OBDock.zip">Download for Mac</a>
       <a class="btn" href="https://github.com/lncch/OBDock">View source</a>
     </div>
-    <p class="req">Apple Silicon · macOS 14 or later · USB OBD adapter · v0.1.1</p>
+    <p class="req">Apple Silicon · macOS 14 or later · USB OBD adapter · v0.2.0</p>
   </header>
 
   <div class="shots">
@@ -117,6 +118,9 @@ footer p + p { margin-top: 8px; }
       <div class="step"><h3>Set up once</h3><p>Installs Rosetta, downloads Wine, and gets the official FORScan installer from forscan.org. You read and accept FORScan's license.</p></div>
       <div class="step"><h3>Plug in</h3><p>OBDock spots your USB adapter and maps it to COM1, the port FORScan expects. Changed USB ports? It remaps.</p></div>
       <div class="step"><h3>Open FORScan</h3><p>The full Windows FORScan, with its Extended license, configuration, and As-Built editing.</p></div>
+    </div>
+    <div class="steps" style="grid-template-columns:1fr">
+      <div class="step"><h3>Files on drive O:</h3><p>Drag license keys, As-Built backups or profiles into OBDock. FORScan sees them on drive O:. Anything FORScan saves to O: lands in Documents/OBDock on your Mac.</p></div>
     </div>
     <div class="diagram"><pre><b>FORScan.exe</b> ──▶ Wine (COM1) ──▶ <b>/dev/cu.usbserial</b> ──▶ OBD adapter ──▶ car (HS-CAN / MS-CAN)
          ▲
@@ -163,7 +167,7 @@ footer p + p { margin-top: 8px; }
     </details>
     <details>
       <summary>Do I need a FORScan license?</summary>
-      <p>Reading codes works with the free Standard license. Changing settings needs the Extended license (a free 2-month trial at forscan.org). The key is tied to the computer's hardware ID, so get a key for the hardware ID FORScan shows on your Mac. In OBDock, click <b>Add License Key</b>, then load it in FORScan's About page.</p>
+      <p>Reading codes works with the free Standard license. Changing settings needs the Extended license (a free 2-month trial at forscan.org). The key is tied to the computer's hardware ID, so get a key for the hardware ID FORScan shows on your Mac. Drop the key into OBDock's Files box, then in FORScan open About → Load key and pick it from drive <b>O:</b>.</p>
     </details>
     <details>
       <summary>Is it safe to write settings?</summary>

@@ -17,6 +17,16 @@ struct OBDockApp: App {
             }
             RunLoop.main.run()
         }
+        // Test hook: link drive O:, add the given files, list the folder, exit.
+        if let i = CommandLine.arguments.firstIndex(of: "--headless-files") {
+            let e = Engine()
+            e.linkFilesDrive()
+            e.addFiles(CommandLine.arguments[(i + 1)...].map { URL(fileURLWithPath: $0) })
+            print(e.log.joined(separator: "\n"))
+            print("FILES=" + e.files.map(\.lastPathComponent).joined(separator: ","))
+            if let n = e.notice { print("NOTICE=" + n.prefix(40)) }
+            exit(0)
+        }
         // Test hook: press "Open FORScan" with no window, report what happened, leave FORScan open.
         if CommandLine.arguments.contains("--headless-open") {
             let e = Engine()
@@ -202,11 +212,7 @@ struct MainPanel: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(engine.busy)
             }
-            HStack {
-                Button("Add License Key…") { engine.importKey() }
-                Spacer()
-                Button("Show Files") { engine.revealFiles() }
-            }
+            FilesCard()
         }
     }
 
@@ -228,6 +234,72 @@ struct MainPanel: View {
             if engine.running {
                 Text("FORScan running").font(.caption).padding(.horizontal, 8).padding(.vertical, 3)
                     .background(.green.opacity(0.15), in: Capsule())
+            }
+        }
+        .padding(14)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+/// The folder FORScan sees as drive O:. Drop files in, see what FORScan saved there.
+struct FilesCard: View {
+    @EnvironmentObject var engine: Engine
+    @State private var targeted = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Files for FORScan", systemImage: "folder").fontWeight(.medium)
+                Spacer()
+                Text("drive O:")
+                    .font(.system(.caption, design: .monospaced))
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 4))
+            }
+            VStack(spacing: 4) {
+                Image(systemName: "arrow.down.doc").font(.title2).foregroundStyle(targeted ? Color.accentColor : .secondary)
+                Text("Drop license keys, As-Built backups or profiles here").font(.callout)
+                Text("In FORScan, open or save files on drive O:").font(.caption).foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                    .foregroundStyle(targeted ? Color.accentColor : Color.secondary.opacity(0.4))
+            )
+            .dropDestination(for: URL.self) { urls, _ in
+                engine.addFiles(urls)
+                return true
+            } isTargeted: { targeted = $0 }
+
+            if !engine.files.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(engine.files.prefix(4), id: \.self) { url in
+                        Button { engine.reveal(url) } label: {
+                            HStack(spacing: 8) {
+                                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                                    .resizable().frame(width: 16, height: 16)
+                                Text(url.lastPathComponent).lineLimit(1).truncationMode(.middle)
+                                Spacer()
+                                Text(url.pathExtension.uppercased()).font(.caption2).foregroundStyle(.secondary)
+                            }
+                            .contentShape(Rectangle())
+                            .padding(.vertical, 4)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Show in Finder")
+                    }
+                    if engine.files.count > 4 {
+                        Text("+ \(engine.files.count - 4) more").font(.caption).foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 2)
+                    }
+                }
+            }
+            HStack {
+                Button("Add Files…") { engine.pickFiles() }
+                Spacer()
+                Button("Open Folder") { engine.openFilesFolder() }
             }
         }
         .padding(14)
