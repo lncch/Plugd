@@ -97,14 +97,14 @@ extension Engine {
         return f
     }
 
-    /// Values under HKCU\Software\Astech\FORScan in Wine's user.reg.
-    nonisolated static func forscanRegistry(_ reg: String) -> [String: String] {
+    /// Values under one key of a Wine .reg file; by default HKCU\Software\Astech\FORScan in user.reg.
+    nonisolated static func forscanRegistry(_ reg: String, key: String = #"Software\\Astech\\FORScan"#) -> [String: String] {
         var inside = false
         var values: [String: String] = [:]
         for line in reg.split(separator: "\n") {
             if line.hasPrefix("[") {
                 if inside { break }
-                inside = line.hasPrefix(#"[Software\\Astech\\FORScan]"#)
+                inside = line.hasPrefix("[\(key)]")
                 continue
             }
             guard inside, line.hasPrefix("\""), line.hasSuffix("\""), let eq = line.range(of: "\"=\"") else { continue }
@@ -171,7 +171,7 @@ extension Engine {
     /// Writes a report with OBDock's and FORScan's logs, with the license key and hardware id removed.
     @discardableResult
     func saveReport(open: Bool = true) -> URL? {
-        let reg = (try? String(contentsOf: prefix.appendingPathComponent("user.reg"), encoding: .utf8)).map(Self.forscanRegistry) ?? [:]
+        let reg = (try? String(contentsOf: prefix.appendingPathComponent("user.reg"), encoding: .utf8)).map { Self.forscanRegistry($0) } ?? [:]
         let info = Bundle.main.infoDictionary
         var r = """
         OBDock \(info?["CFBundleShortVersionString"] ?? "?") (\(info?["CFBundleVersion"] ?? "?")) · macOS \(ProcessInfo.processInfo.operatingSystemVersionString)
@@ -234,6 +234,8 @@ extension Engine {
         let reg = "[Software\\\\Astech\\\\FORScan] 1\n\"ExpirationDate\"=\"2026-12-18\"\n[Next]\n\"ExpirationDate\"=\"1999-01-01\"\n"
         let date = forscanRegistry(reg)["ExpirationDate"].flatMap(isoFormatter("yyyy-MM-dd").date)
         if date.map({ Calendar(identifier: .gregorian).component(.year, from: $0) }) != 2026 { fails.append("license date \(String(describing: date))") }
+        let ports = "[Software\\\\Wine\\\\Ports] 1\n#time=1\n\"COM1\"=\"/dev/cu.usbserial-120\"\n"
+        if forscanRegistry(ports, key: #"Software\\Wine\\Ports"#)["COM1"] != "/dev/cu.usbserial-120" { fails.append("COM1 not read") }
         return fails
     }
 }

@@ -67,6 +67,9 @@ final class Engine: ObservableObject {
             }
         }
         refreshSteps()
+        // COM1 stays in the registry between launches; re-mapping it costs a full Wine start.
+        let system = try? String(contentsOf: prefix.appendingPathComponent("system.reg"), encoding: .utf8)
+        mappedPort = system.flatMap { Self.forscanRegistry($0, key: #"Software\\Wine\\Ports"#)["COM1"] }
         readLicense()
         readInstalledVersion()
         poll()
@@ -310,7 +313,6 @@ final class Engine: ObservableObject {
 
     func quitForscan() async {
         _ = await wineRun("wineserver", ["-k"])
-        mappedPort = nil
         poll()
         say("FORScan closed")
     }

@@ -40,4 +40,11 @@ cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp THIRD_PARTY.md "$APP/Contents/Resources/THIRD_PARTY.md"
 codesign --force --sign - "$APP"
 ditto -c -k --keepParent "$APP" OBDock.zip
+# Disk image with an Applications shortcut, so people drag the app in like any other.
+DMG=$(mktemp -d)
+cp -R "$APP" "$DMG/"
+ln -s /Applications "$DMG/Applications"
+rm -f OBDock.dmg
+hdiutil create -quiet -volname OBDock -srcfolder "$DMG" -format UDZO OBDock.dmg
+rm -rf "$DMG"
 echo "built $(pwd)/$APP"

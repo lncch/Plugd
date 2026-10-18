@@ -4,7 +4,7 @@
 
 <p align="center">Run FORScan (Ford/Mazda diagnostics, Windows only) on an Apple Silicon Mac.<br>Free, no Windows, no virtual machine.</p>
 
-<p align="center"><a href="https://github.com/lncch/OBDock/releases/latest/download/OBDock.zip"><b>Download for Mac</b></a> · macOS 14+ · Apple Silicon · USB OBD adapter</p>
+<p align="center"><a href="https://github.com/lncch/OBDock/releases/latest/download/OBDock.dmg"><b>Download for Mac</b></a> · macOS 14+ · Apple Silicon · USB OBD adapter</p>
 
 <p align="center"><img src="docs/img/setup.png" width="420" alt="Setup screen"> <img src="docs/img/main.png" width="420" alt="Main screen"></p>
 
@@ -20,7 +20,7 @@ It also:
 
 ## Install
 
-1. Download `OBDock.zip`, unzip it, and move OBDock to Applications.
+1. Download `OBDock.dmg`, open it, and drag OBDock onto the Applications folder.
 2. Open it. macOS blocks it the first time because it isn't notarized yet: open System Settings → Privacy & Security and click **Open Anyway**.
 3. Click **Set Up** and accept FORScan's license (about 2 minutes, ~230 MB download).
 4. Plug in your adapter and click **Open FORScan**.
