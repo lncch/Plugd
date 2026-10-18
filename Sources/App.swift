@@ -130,10 +130,8 @@ struct ContentView: View {
             if !seenWelcome {
                 WelcomeView { seenWelcome = true }
             } else if !engine.ready {
-                ScrollView {
-                    SetupPanel().frame(maxWidth: 520).padding(40)
-                }
-                .frame(maxWidth: .infinity)
+                SetupPanel().frame(maxWidth: 520).padding(40)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 main
             }
