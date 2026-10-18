@@ -1,15 +1,47 @@
-// Draws the app icon: white car symbol on a blue rounded square. Usage: swift icon.swift OUT.png SIZE
+// Draws the app icon (design A, "Bridge"): white car crossing a bridge arch on a sunset gradient.
+// Usage: swift icon.swift OUT.png SIZE
 import AppKit
+
 let out = CommandLine.arguments[1], n = CGFloat(Double(CommandLine.arguments[2])!)
 let img = NSImage(size: NSSize(width: n, height: n))
 img.lockFocus()
-let inset = n * 0.1, r = NSRect(x: inset, y: inset, width: n - 2 * inset, height: n - 2 * inset)
-let path = NSBezierPath(roundedRect: r, xRadius: r.width * 0.225, yRadius: r.width * 0.225)
-NSGradient(starting: NSColor(red: 0.16, green: 0.45, blue: 0.98, alpha: 1),
-           ending: NSColor(red: 0.05, green: 0.20, blue: 0.62, alpha: 1))!.draw(in: path, angle: -90)
-let cfg = NSImage.SymbolConfiguration(pointSize: n * 0.36, weight: .semibold).applying(.init(paletteColors: [.white]))
+
+// macOS icon grid: the shape fills ~80% of the canvas.
+let r = NSRect(x: 0, y: 0, width: n, height: n).insetBy(dx: n * 0.1, dy: n * 0.1)
+let s = r.width / 432  // the design was drawn on a 432 pt tile
+let shape = NSBezierPath(roundedRect: r, xRadius: r.width * 0.225, yRadius: r.width * 0.225)
+NSGradient(colors: [NSColor(red: 1.0, green: 0.55, blue: 0.20, alpha: 1),
+                    NSColor(red: 0.93, green: 0.22, blue: 0.45, alpha: 1),
+                    NSColor(red: 0.45, green: 0.18, blue: 0.75, alpha: 1)])!.draw(in: shape, angle: -60)
+
+NSColor.white.withAlphaComponent(0.9).setStroke()
+let arch = NSBezierPath()
+arch.lineWidth = 22 * s
+arch.lineCapStyle = .round
+arch.move(to: NSPoint(x: r.minX + 60 * s, y: r.minY + 120 * s))
+arch.curve(to: NSPoint(x: r.maxX - 60 * s, y: r.minY + 120 * s),
+           controlPoint1: NSPoint(x: r.minX + 140 * s, y: r.minY + 300 * s),
+           controlPoint2: NSPoint(x: r.maxX - 140 * s, y: r.minY + 300 * s))
+arch.stroke()
+let deck = NSBezierPath()
+deck.lineWidth = 14 * s
+deck.lineCapStyle = .round
+deck.move(to: NSPoint(x: r.minX + 40 * s, y: r.minY + 120 * s))
+deck.line(to: NSPoint(x: r.maxX - 40 * s, y: r.minY + 120 * s))
+deck.stroke()
+
+let cfg = NSImage.SymbolConfiguration(pointSize: 120 * s, weight: .semibold).applying(.init(paletteColors: [.white]))
 let car = NSImage(systemSymbolName: "car.side.fill", accessibilityDescription: nil)!.withSymbolConfiguration(cfg)!
-car.draw(in: NSRect(x: (n - car.size.width) / 2, y: (n - car.size.height) / 2 + n * 0.02, width: car.size.width, height: car.size.height))
+car.draw(in: NSRect(x: r.midX - car.size.width / 2, y: r.midY - car.size.height / 2 + 70 * s,
+                    width: car.size.width, height: car.size.height))
 img.unlockFocus()
-let rep = NSBitmapImageRep(data: img.tiffRepresentation!)!
+
+// Write exactly n x n pixels (lockFocus renders at the screen's scale).
+let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(n), pixelsHigh: Int(n), bitsPerSample: 8,
+                           samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+                           bytesPerRow: 0, bitsPerPixel: 0)!
+NSGraphicsContext.saveGraphicsState()
+NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+img.draw(in: NSRect(x: 0, y: 0, width: n, height: n))
+NSGraphicsContext.restoreGraphicsState()
 try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: out))

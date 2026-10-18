@@ -38,6 +38,36 @@ struct ScanBridgeApp: App {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .windowResizability(.contentSize)
+        .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button("About ScanBridge") { Self.showAbout() }
+            }
+            CommandGroup(replacing: .help) {
+                Link("ScanBridge on GitHub", destination: URL(string: "https://github.com/lncch/ScanBridge")!)
+                Link("Report a Problem", destination: URL(string: "https://github.com/lncch/ScanBridge/issues")!)
+                Divider()
+                Link("FORScan Website", destination: URL(string: "https://forscan.org")!)
+            }
+        }
+    }
+
+    static func showAbout() {
+        let text = """
+        Runs FORScan on Apple Silicon Macs with Wine.
+        Open source under the MIT license.
+        github.com/lncch/ScanBridge
+
+        FORScan is made by Alexey Savin (forscan.org).
+        ScanBridge is not affiliated with FORScan, Ford or Mazda.
+        Uses Wine (LGPL) and innoextract (zlib).
+        """
+        let para = NSMutableParagraphStyle()
+        para.alignment = .center
+        let credits = NSAttributedString(string: text, attributes: [
+            .font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor, .paragraphStyle: para,
+        ])
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
+        NSApp.activate(ignoringOtherApps: true)
     }
 }
 
@@ -74,9 +104,9 @@ struct ContentView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            Image(systemName: "car.side")
-                .font(.system(size: 28))
-                .foregroundStyle(.tint)
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 52, height: 52)
             VStack(alignment: .leading, spacing: 2) {
                 Text("ScanBridge").font(.title2.bold())
                 Text("FORScan on your Mac, no Windows needed").foregroundStyle(.secondary)
