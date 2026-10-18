@@ -12,6 +12,7 @@
 :root {
   --bg: #000; --fg: #ededed; --muted: #a1a1a1; --dim: #6b6b6b;
   --line: #1f1f1f; --card: #0a0a0a; --accent: #3b82f6; --ok: #22c55e;
+  --bone: #EDE8DC; --espresso: #3A2618;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; }
@@ -20,19 +21,20 @@ a { color: inherit; }
 .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
 nav { display: flex; align-items: center; justify-content: space-between; height: 64px; border-bottom: 1px solid var(--line); }
 nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; text-decoration: none; }
-nav .brand img { width: 28px; height: 28px; }
+nav .brand img { height: 16px; width: auto; }
 nav .links a { color: var(--muted); text-decoration: none; margin-left: 24px; font-size: 14px; }
 nav .links a:hover { color: var(--fg); }
 
 .hero { padding: 88px 0 56px; text-align: center; }
+.hero-icon { display: block; width: 120px; height: 120px; margin: -12px auto 16px; }
 .pill { display: inline-block; font: 500 12px/1 "Geist Mono", monospace; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; margin-bottom: 28px; }
 .pill b { color: var(--ok); font-weight: 500; }
 h1 { font-size: clamp(36px, 7vw, 64px); line-height: 1.05; letter-spacing: -0.04em; font-weight: 700; }
 .hero p { color: var(--muted); font-size: 18px; max-width: 560px; margin: 20px auto 0; }
 .cta { display: flex; gap: 12px; justify-content: center; margin-top: 36px; flex-wrap: wrap; }
 .btn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 8px; font-weight: 500; font-size: 15px; text-decoration: none; border: 1px solid var(--line); }
-.btn.primary { background: var(--fg); color: #000; border-color: var(--fg); }
-.btn.primary:hover { background: #fff; }
+.btn.primary { background: var(--bone); color: var(--espresso); border-color: var(--bone); font-weight: 600; }
+.btn.primary:hover { background: #f5f1e8; }
 .btn:not(.primary):hover { border-color: #333; }
 .req { margin-top: 16px; font-size: 13px; color: var(--dim); }
 
@@ -84,7 +86,7 @@ footer p + p { margin-top: 8px; }
 <body>
 <div class="wrap">
   <nav>
-    <a class="brand" href="#"><img src="img/icon.png" alt="">OBDock</a>
+    <a class="brand" href="#"><img src="img/mark.svg" alt="">OBDock</a>
     <div class="links">
       <a href="#how">How it works</a>
       <a href="#tested">Tested</a>
@@ -94,6 +96,7 @@ footer p + p { margin-top: 8px; }
   </nav>
 
   <header class="hero">
+    <img class="hero-icon" src="img/icon.png" alt="OBDock app icon">
     <span class="pill"><b>●</b> Reads and As-Built writes tested on a real Ford</span>
     <h1>FORScan on your Mac.<br>No Windows needed.</h1>
     <p>OBDock sets up everything FORScan needs on an Apple Silicon Mac, finds your OBD adapter, and opens FORScan with one click. Free.</p>
