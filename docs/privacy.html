@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy · Plugd</title>
+<link rel="icon" href="img/icon.png?v=0.3.2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #000; --fg: #ededed; --muted: #a1a1a1; --dim: #6b6b6b; --line: #1f1f1f; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.7 Geist, -apple-system, system-ui, sans-serif; }
+a { color: inherit; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+nav { display: flex; align-items: center; height: 64px; border-bottom: 1px solid var(--line); }
+nav a { display: flex; align-items: center; gap: 10px; font-weight: 600; text-decoration: none; }
+nav img { height: 16px; }
+main { padding: 56px 0 72px; }
+h1 { font-size: 36px; letter-spacing: -0.02em; font-weight: 600; }
+.date { color: var(--dim); font-size: 14px; margin-top: 6px; }
+h2 { font-size: 20px; font-weight: 600; margin-top: 40px; }
+p, ul { color: var(--muted); margin-top: 12px; }
+ul { padding-left: 20px; }
+li + li { margin-top: 6px; }
+strong { color: var(--fg); font-weight: 500; }
+footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--dim); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav><a href="./"><img src="img/mark.svg?v=0.3.0" alt="">Plugd</a></nav>
+<main>
+<h1>Privacy Policy</h1>
+<p class="date">Last updated October 19, 2026</p>
+<p>Short version: Plugd collects nothing. It has no accounts, no analytics and no tracking, and it never sends your data to me.</p>
+
+<h2>What the app connects to</h2>
+<ul>
+<li><strong>forscan.org</strong>, to download FORScan during setup and, if "Check for FORScan updates" is on in Settings, to look for a newer version when the app opens.</li>
+<li><strong>github.com</strong>, to download Wine during setup.</li>
+</ul>
+<p>Those sites see the same things any website sees when you visit, like your IP address. Plugd sends them nothing else.</p>
+<p>Some buttons open a page in your browser, such as a Google search for an engine code or a new GitHub issue. Plugd only opens the page. What happens there is up to you and that site.</p>
+
+<h2>What stays on your Mac</h2>
+<ul>
+<li>Wine, FORScan and its settings, in <strong>~/Library/Application Support/Plugd</strong>.</li>
+<li>Your license keys, As-Built backups and other files you add, in <strong>~/Documents/Plugd</strong>.</li>
+<li>Readings from your car (engine codes, live data, battery voltage). Plugd shows them and keeps none of them.</li>
+<li>Your settings in Plugd's preferences.</li>
+</ul>
+
+<h2>Problem reports</h2>
+<p>"Report a Problem" saves a text file on your Desktop with Plugd's log and FORScan's log. Plugd removes your FORScan license key and hardware id from it. The file can still contain your Mac user name and details about your car, so read it before you share it. Nothing is sent unless you attach it to a GitHub issue yourself.</p>
+
+<h2>This website</h2>
+<p>plugd.almoayyad.dev has no analytics and no cookies. It is hosted on GitHub Pages behind Cloudflare and loads its font from Google Fonts. Those services may keep standard logs, like your IP address, under their own privacy policies.</p>
+
+<h2>FORScan</h2>
+<p>FORScan is a separate program with its own license and privacy terms, made by Alexey Savin. See <a href="https://forscan.org">forscan.org</a>.</p>
+
+<h2>Changes</h2>
+<p>If this policy changes, the new version goes on this page with a new date. The full history is in the GitHub repository.</p>
+<h2>Contact</h2>
+<p>Plugd is made by Almoayyad Abuljdail. Open an issue at <a href="https://github.com/lncch/Plugd/issues">github.com/lncch/Plugd/issues</a>, or find my contact details at <a href="https://almoayyad.dev">almoayyad.dev</a>.</p>
+</main>
+</div>
+<footer><div class="wrap"><p><a href="./">Home</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="https://github.com/lncch/Plugd">GitHub</a></p></div></footer>
+</body>
+</html>
