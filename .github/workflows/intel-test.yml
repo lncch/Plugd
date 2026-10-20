@@ -20,7 +20,7 @@ jobs:
       - name: Full setup into an empty folder
         timeout-minutes: 15
         run: |
-          PLUGD_HOME="$RUNNER_TEMP/home" Plugd.app/Contents/MacOS/Plugd --headless-setup 2>&1 | tee setup.log | grep --line-buffered -viE 'fixme|err:'
+          PLUGD_HOME="$RUNNER_TEMP/home" script -q /dev/null Plugd.app/Contents/MacOS/Plugd --headless-setup 2>&1 | tee setup.log | grep --line-buffered -viE 'fixme|err:'
           grep -q 'READY=true' setup.log
       - if: always()
         uses: actions/upload-artifact@v4
