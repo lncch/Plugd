@@ -453,12 +453,13 @@ final class Engine: ObservableObject {
         do { try p.run() } catch { return (-1, error.localizedDescription) }
         let deadline = Date().addingTimeInterval(timeout)
         var data = Data()
-        let reader = DispatchQueue(label: "read")
-        reader.async { data = pipe.fileHandleForReading.readDataToEndOfFile() }
+        let read = DispatchSemaphore(value: 0)
+        DispatchQueue(label: "read").async { data = pipe.fileHandleForReading.readDataToEndOfFile(); read.signal() }
         while p.isRunning && Date() < deadline { usleep(100_000) }
         if p.isRunning { p.terminate() }
         p.waitUntilExit()
-        reader.sync {}
+        // Programs it started (Wine's helpers) can keep the pipe open after it exits; don't wait on them forever.
+        guard read.wait(timeout: .now() + 5) == .success else { return (p.terminationStatus, "(output still open after exit)") }
         return (p.terminationStatus, String(decoding: data, as: UTF8.self))
     }
 

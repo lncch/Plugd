@@ -31,6 +31,10 @@ struct PlugdApp: App {
             var fails = DTC.selfTest() + Engine.redactSelfTest() + ELM.liveSelfTest()
             if Engine.setupVersion("FORScanSetup2.3.71.release.exe") != "2.3.71" { fails.append("setupVersion") }
             if !Engine.older("2.3.9", "2.3.71") || Engine.older("2.3.71", "2.3.71") { fails.append("older") }
+            // A child that leaves a background process holding the pipe must not hang shell() (Wine installer on Intel).
+            let start = Date()
+            _ = Engine.shell("/bin/sh", ["-c", "sleep 30 & exit 0"], timeout: 1)
+            if Date().timeIntervalSince(start) > 10 { fails.append("shell waited on a leftover process") }
             print(fails.isEmpty ? "SELF-TEST OK" : fails.joined(separator: "\n"))
             exit(fails.isEmpty ? 0 : 1)
         }
