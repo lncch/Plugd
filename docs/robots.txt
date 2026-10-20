@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://plugd.almoayyad.dev/sitemap.xml
