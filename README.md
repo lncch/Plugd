@@ -4,7 +4,7 @@
 
 <p align="center">FORScan on a Mac, for free.</p>
 
-<p align="center"><a href="https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg"><b>Download for Mac</b></a> · macOS 14+ · Apple Silicon · USB OBD adapter</p>
+<p align="center"><a href="https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg"><b>Download for Mac</b></a> · macOS 14+ · Apple Silicon or Intel · USB OBD adapter</p>
 
 <p align="center"><img src="docs/img/setup.png" width="420" alt="Setup screen"> <img src="docs/img/main.png" width="420" alt="Main screen"></p>
 
@@ -40,11 +40,11 @@ Back up before you change anything, and keep a battery charger on the car while 
 |---|---|---|---|
 | 2023 Ford Taurus, Middle East (Mondeo EVOS, 2021 MY) | cheap ELM327 v1.5 clone, CH340 chip, HS/MS switch | 22+ modules | yes, checked in the car |
 
-That's one car and one adapter. If you try it on yours, open an issue and tell me how it went.
+That's one car and one adapter. Intel Macs are new in 0.3.2: I've only tested the Intel version through Rosetta on my M-series Mac, not on a real Intel Mac. If you try it on yours, open an issue and tell me how it went.
 
 ## Build it yourself
 
-You need the Xcode command line tools and `brew install innoextract dylibbundler`. Then:
+You need the Xcode command line tools and `brew install innoextract dylibbundler`. The first build also runs `tools/innoextract-x86.sh`, which fetches the Intel half of innoextract (hash-checked). Then:
 
     ./build.sh
 

@@ -212,8 +212,16 @@ extension Engine {
             .first { FileManager.default.fileExists(atPath: $0.path) }
     }
 
-    nonisolated static func redact(_ text: String, secrets: [String]) -> String {
+    nonisolated static func redact(_ text: String, secrets: [String], user: String = NSUserName()) -> String {
         var t = text
+        // The Mac user name shows up in paths and in FORScan's "User name:" line.
+        if user.count >= 2 {
+            t = t.replacingOccurrences(of: #"\b"# + NSRegularExpression.escapedPattern(for: user) + #"\b"#,
+                                       with: "[user]", options: [.regularExpression, .caseInsensitive])
+        }
+        // VINs: 17 letters and digits (no I, O or Q), with at least one of each.
+        t = t.replacingOccurrences(of: #"\b(?=[A-HJ-NPR-Z0-9]*[A-HJ-NPR-Z])(?=[A-HJ-NPR-Z0-9]*[0-9])[A-HJ-NPR-Z0-9]{17}\b"#,
+                                   with: "[VIN]", options: .regularExpression)
         for s in secrets where s.count >= 8 { t = t.replacingOccurrences(of: s, with: "[removed]") }
         // FORScan logs the key as "Registry Key: …" and "Extended License key: …".
         t = t.split(separator: "\n", omittingEmptySubsequences: false).map { line in
@@ -226,11 +234,15 @@ extension Engine {
     nonisolated static func redactSelfTest() -> [String] {
         let key = String(repeating: "Ab3+", count: 20), id = "KLZwFAKEid123456"
         let log = "12:00 [GUI] Registry Key: \(key)\n12:01 [GUI] Extended License key: \(key)\nId=\(id) adapter ok\nother \(key)"
-        let out = redact(log, secrets: [key, id])
+            + "\nUser name: jdoe\nC:\\users\\jdoe\\AppData /Users/jdoe/Documents\nVIN: 1FAHP2E89DG123456 module 7E0"
+        let out = redact(log, secrets: [key, id], user: "jdoe")
         var fails: [String] = []
         if out.contains(key) || out.contains("Ab3+Ab3+") { fails.append("key left in report") }
         if out.contains(id) { fails.append("hardware id left in report") }
         if !out.contains("adapter ok") { fails.append("normal text removed") }
+        if out.contains("jdoe") { fails.append("user name left in report") }
+        if out.contains("1FAHP2E89DG123456") { fails.append("VIN left in report") }
+        if !out.contains("module 7E0") || !out.contains("/Users/[user]/Documents") { fails.append("normal text removed") }
         let reg = "[Software\\\\Astech\\\\FORScan] 1\n\"ExpirationDate\"=\"2026-12-18\"\n[Next]\n\"ExpirationDate\"=\"1999-01-01\"\n"
         let date = forscanRegistry(reg)["ExpirationDate"].flatMap(isoFormatter("yyyy-MM-dd").date)
         if date.map({ Calendar(identifier: .gregorian).component(.year, from: $0) }) != 2026 { fails.append("license date \(String(describing: date))") }

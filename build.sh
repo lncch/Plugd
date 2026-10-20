@@ -7,7 +7,14 @@ APP=Plugd.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/bin" "$APP/Contents/Resources/lib"
 
-swiftc -O -parse-as-library -target arm64-apple-macos14.0 Sources/*.swift -o "$APP/Contents/MacOS/Plugd"
+# Universal: Apple Silicon and Intel.
+[ -d vendor/x86 ] || ./tools/innoextract-x86.sh
+OBJ=$(mktemp -d)
+for a in arm64 x86_64; do
+  swiftc -O -parse-as-library -target $a-apple-macos14.0 Sources/*.swift -o "$OBJ/Plugd-$a"
+done
+lipo -create "$OBJ"/Plugd-* -output "$APP/Contents/MacOS/Plugd"
+rm -rf "$OBJ"
 
 cat > "$APP/Contents/Info.plist" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -19,8 +26,8 @@ cat > "$APP/Contents/Info.plist" <<'EOF'
   <key>CFBundleIdentifier</key><string>dev.almoayyad.plugd</string>
   <key>CFBundleExecutable</key><string>Plugd</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.3.1</string>
-  <key>CFBundleVersion</key><string>6</string>
+  <key>CFBundleShortVersionString</key><string>0.3.2</string>
+  <key>CFBundleVersion</key><string>7</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>CFBundleIconFile</key><string>AppIcon</string>
@@ -35,6 +42,11 @@ chmod u+w "$APP/Contents/Resources/bin/innoextract"
 dylibbundler -of -b -x "$APP/Contents/Resources/bin/innoextract" \
   -d "$APP/Contents/Resources/lib" -p @executable_path/../lib >/dev/null
 
+# Add the Intel half (built by tools/innoextract-x86.sh) to innoextract and each library.
+for g in "$APP/Contents/Resources/bin/innoextract" "$APP/Contents/Resources/lib/"*.dylib; do
+  lipo -create "$g" "vendor/x86/${g#"$APP/Contents/Resources/"}" -output "$g.fat"
+  mv "$g.fat" "$g"
+done
 codesign --force --sign - "$APP/Contents/Resources/lib/"*.dylib
 codesign --force --sign - "$APP/Contents/Resources/bin/innoextract"
 cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"

@@ -10,6 +10,8 @@ enum StepState: Equatable {
 final class Engine: ObservableObject {
     // Wine build verified with FORScan and a real car on 2026-10-18.
     static let wineURL = URL(string: "https://github.com/Gcenx/macOS_Wine_builds/releases/download/11.18/wine-staging-11.18-osx64.tar.xz")!
+    /// SHA-256 that GitHub publishes for that file; a download that doesn't match is never unpacked.
+    static let wineSHA256 = "b63704b91af269bc026a87f12bd297c4a50caaf570c322e600b6621ef918f127"
     nonisolated static let forscanPage = URL(string: "https://forscan.org/download.html")!
     static let portPrefixes = ["cu.usbserial", "cu.wchusbserial", "cu.usbmodem", "cu.SLAB_USBtoUART"]
 
@@ -177,6 +179,13 @@ final class Engine: ObservableObject {
         let tarball = downloads.appendingPathComponent("wine.tar.xz")
         if !fm.fileExists(atPath: wineBin.appendingPathComponent("wine").path) {
             try await download(Self.wineURL, to: tarball, label: "Downloading Wine") { self.wine = .running($0) }
+            wine = .running("Checking Wine…")
+            let sum = await Self.run("/usr/bin/shasum", ["-a", "256", tarball.path])
+            guard sum.out.hasPrefix(Self.wineSHA256 + " ") else {
+                try? fm.removeItem(at: tarball)
+                wine = .failed("Wine download didn't match")
+                throw Fail("Wine SHA-256 mismatch: \(sum.out.prefix(64))")
+            }
             wine = .running("Unpacking Wine…")
             let wineDir = base.appendingPathComponent("wine")
             try fm.createDirectory(at: wineDir, withIntermediateDirectories: true)

@@ -126,7 +126,7 @@ struct PlugdApp: App {
 
     static func showAbout() {
         let text = """
-        Runs FORScan on Apple Silicon Macs with Wine.
+        Runs FORScan on Macs with Wine.
         Open source under the MIT license.
         github.com/lncch/Plugd
 
@@ -564,7 +564,9 @@ struct SetupPanel: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             VStack(alignment: .leading, spacing: 12) {
+                #if arch(arm64)  // Intel Macs run Wine directly; Rosetta is only for Apple Silicon.
                 StepRow(title: "Rosetta", detail: "Apple's tool to run Intel apps", state: engine.rosetta)
+                #endif
                 StepRow(title: "Wine", detail: "Runs Windows programs (190 MB download)", state: engine.wine)
                 StepRow(title: "FORScan", detail: "Downloaded from forscan.org", state: engine.forscan)
             }
