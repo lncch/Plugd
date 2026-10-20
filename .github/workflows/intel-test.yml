@@ -15,6 +15,12 @@ jobs:
           cp -R "$RUNNER_TEMP/dmg/Plugd.app" .
           defaults read "$PWD/Plugd.app/Contents/Info.plist" CFBundleShortVersionString
           lipo -archs Plugd.app/Contents/MacOS/Plugd
+      - uses: actions/checkout@v4
+        with: { path: src }
+      - name: Swap in Plugd built from this commit (keeps the release's innoextract and icon)
+        run: |
+          swiftc -O -parse-as-library -target x86_64-apple-macos14.0 src/Sources/*.swift -o Plugd.app/Contents/MacOS/Plugd
+          codesign --force --sign - Plugd.app
       - run: Plugd.app/Contents/Resources/bin/innoextract --version
       - run: Plugd.app/Contents/MacOS/Plugd --self-test
       - name: Full setup into an empty folder
