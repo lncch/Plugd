@@ -11,6 +11,13 @@ struct PlugdApp: App {
         if CommandLine.arguments.contains("--headless-setup") {
             let e = Engine()
             e.autoAcceptEula = true
+            // Progress every 10 s on stderr, so a hang shows which step it is stuck in.
+            Task { @MainActor in
+                while true {
+                    FileHandle.standardError.write("rosetta=\(e.rosetta) wine=\(e.wine) forscan=\(e.forscan) log=\(e.log.last ?? "")\n".data(using: .utf8)!)
+                    try? await Task.sleep(nanoseconds: 10_000_000_000)
+                }
+            }
             Task { @MainActor in
                 await e.setUp()
                 print(e.log.joined(separator: "\n"))
