@@ -1,0 +1,27 @@
+# Tests the released Plugd.dmg on a real Intel Mac: self-test, then a full setup (Wine + FORScan) into an empty folder.
+# No adapter or car here, so this covers everything up to "Open FORScan".
+name: intel-test
+on: workflow_dispatch
+jobs:
+  test:
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    steps:
+      - run: uname -m && sw_vers
+      - name: Get the latest release
+        run: |
+          curl -fsSL -o Plugd.dmg https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg
+          hdiutil attach -nobrowse -mountpoint "$RUNNER_TEMP/dmg" Plugd.dmg
+          cp -R "$RUNNER_TEMP/dmg/Plugd.app" .
+          defaults read "$PWD/Plugd.app/Contents/Info.plist" CFBundleShortVersionString
+          lipo -archs Plugd.app/Contents/MacOS/Plugd
+      - run: Plugd.app/Contents/Resources/bin/innoextract --version
+      - run: Plugd.app/Contents/MacOS/Plugd --self-test
+      - name: Full setup into an empty folder
+        run: |
+          PLUGD_HOME="$RUNNER_TEMP/home" Plugd.app/Contents/MacOS/Plugd --headless-setup > setup.log 2>&1 || true
+          grep -viE 'fixme|err:' setup.log | tail -20
+          grep -q 'READY=true' setup.log
+      - name: Check FORScan is installed
+        run: |
+          find "$RUNNER_TEMP/home" -name FORScan.exe | grep . 
