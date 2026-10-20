@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds Plugd.app with the command line tools (no Xcode).
+# Builds Plugd.app, Plugd.zip and Plugd.dmg with the command line tools.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -47,13 +47,24 @@ for g in "$APP/Contents/Resources/bin/innoextract" "$APP/Contents/Resources/lib/
   lipo -create "$g" "vendor/x86/${g#"$APP/Contents/Resources/"}" -output "$g.fat"
   mv "$g.fat" "$g"
 done
-codesign --force --sign - "$APP/Contents/Resources/lib/"*.dylib
-codesign --force --sign - "$APP/Contents/Resources/bin/innoextract"
+# Signing: Developer ID + hardened runtime when that certificate is in the keychain, else ad-hoc (local only).
+ID=$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)
+if [ -n "$ID" ]; then SIGN=(codesign --force --options runtime --timestamp --sign "$ID"); else SIGN=(codesign --force --sign -); fi
+"${SIGN[@]}" "$APP/Contents/Resources/lib/"*.dylib
+"${SIGN[@]}" "$APP/Contents/Resources/bin/innoextract"
 cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 # Light, dark and tinted icon, compiled from brand/Plugd.icon by .github/workflows/icon.yml.
 [ -f brand/Assets.car ] && cp brand/Assets.car "$APP/Contents/Resources/Assets.car"
 cp THIRD_PARTY.md "$APP/Contents/Resources/THIRD_PARTY.md"
-codesign --force --sign - "$APP"
+"${SIGN[@]}" "$APP"
+# Notarize (Apple's malware check) when the "plugd" notarytool profile exists; NOTARIZE=0 skips it.
+NOTARY=""
+if [ -n "$ID" ] && [ "${NOTARIZE:-1}" = 1 ] && xcrun notarytool history --keychain-profile plugd >/dev/null 2>&1; then
+  NOTARY=yes
+  ditto -c -k --keepParent "$APP" Plugd.zip
+  xcrun notarytool submit Plugd.zip --keychain-profile plugd --wait | tee /dev/stderr | grep -q 'status: Accepted'
+  xcrun stapler staple "$APP"
+fi
 ditto -c -k --keepParent "$APP" Plugd.zip
 # Disk image with an Applications shortcut, so people drag the app in like any other.
 DMG=$(mktemp -d)
@@ -62,4 +73,10 @@ ln -s /Applications "$DMG/Applications"
 rm -f Plugd.dmg
 hdiutil create -quiet -volname Plugd -srcfolder "$DMG" -format UDZO Plugd.dmg
 rm -rf "$DMG"
-echo "built $(pwd)/$APP"
+if [ -n "$NOTARY" ]; then
+  codesign --force --timestamp --sign "$ID" Plugd.dmg
+  xcrun notarytool submit Plugd.dmg --keychain-profile plugd --wait | tee /dev/stderr | grep -q 'status: Accepted'
+  xcrun stapler staple Plugd.dmg
+  spctl --assess --type open --context context:primary-signature Plugd.dmg
+fi
+echo "built $(pwd)/$APP (signed: ${ID:-ad-hoc}, notarized: ${NOTARY:-no})"
