@@ -18,10 +18,13 @@ jobs:
       - run: Plugd.app/Contents/Resources/bin/innoextract --version
       - run: Plugd.app/Contents/MacOS/Plugd --self-test
       - name: Full setup into an empty folder
+        timeout-minutes: 15
         run: |
-          PLUGD_HOME="$RUNNER_TEMP/home" Plugd.app/Contents/MacOS/Plugd --headless-setup > setup.log 2>&1 || true
-          grep -viE 'fixme|err:' setup.log | tail -20
+          PLUGD_HOME="$RUNNER_TEMP/home" Plugd.app/Contents/MacOS/Plugd --headless-setup 2>&1 | tee setup.log | grep --line-buffered -viE 'fixme|err:'
           grep -q 'READY=true' setup.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: setup-log, path: setup.log }
       - name: Check FORScan is installed
         run: |
           find "$RUNNER_TEMP/home" -name FORScan.exe | grep . 
