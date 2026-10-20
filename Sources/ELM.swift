@@ -206,9 +206,13 @@ extension ELM {
 
     /// PIDs listed in a 0100/0120/0140… bit mask: the top bit is base+1.
     static func supportedPIDs(_ mask: [UInt8], base: UInt8) -> [UInt8] {
-        mask.prefix(4).enumerated().flatMap { i, byte in
-            (0..<8).compactMap { bit in byte & (0x80 >> bit) != 0 ? base + UInt8(i * 8 + bit) + 1 : nil }
+        var ids: [UInt8] = []
+        for (i, byte) in mask.prefix(4).enumerated() {
+            for bit in 0..<8 where byte & (0x80 >> UInt8(bit)) != 0 {
+                ids.append(base + UInt8(i * 8 + bit + 1))
+            }
         }
+        return ids
     }
 
     /// Asks which mode-01 PIDs the car supports. The first request also finds the car's protocol.
