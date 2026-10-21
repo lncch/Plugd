@@ -64,3 +64,7 @@ FORScan's own installer crashes under Wine 11, so Plugd tries it first. If it fa
 ## Credits
 
 FORScan is made by Alexey Savin (forscan.org). I'm not connected to FORScan or Ford. Plugd's code is MIT licensed. FORScan, Wine and innoextract keep their own licenses (see `THIRD_PARTY.md`).
+
+## Contact
+
+Questions or feedback: plugd@almoayyad.dev, or open an issue.
