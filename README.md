@@ -29,7 +29,7 @@ If you like it, give it a ⭐. It helps other Ford owners find it.
 
 ## Install
 
-1. Download `Plugd.dmg`, open it, and drag Plugd into Applications.
+1. [Download Plugd.dmg](https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg), open it, and drag Plugd into Applications.
 2. Open it. The first time, macOS blocks it because I haven't paid Apple to notarize it. Go to System Settings → Privacy & Security and click **Open Anyway**.
 3. Click **Set Up** and accept FORScan's license. It takes about 2 minutes and downloads about 230 MB.
 4. Plug in your adapter and click **Open FORScan**.
@@ -44,22 +44,9 @@ Back up before you change anything, and keep a battery charger on the car while 
 
 That's one car and one adapter. Intel Macs are new: setup is tested on a real Intel Mac (GitHub's Intel runner), but nobody has tried it with an adapter and a car yet. If you try it on yours, open an issue and tell me how it went.
 
-## Build it yourself
+## For developers
 
-You need the Xcode command line tools and `brew install innoextract dylibbundler`. The first build also runs `tools/innoextract-x86.sh`, which fetches the Intel half of innoextract (hash-checked). Then:
-
-    ./build.sh
-
-There are test hooks that run without a window, for example with a fake adapter from ELM327-emulator:
-
-    PLUGD_HOME=/tmp/empty Plugd.app/Contents/MacOS/Plugd --headless-setup
-    PLUGD_HOME=/tmp/empty PLUGD_PORT=/dev/ttys008 Plugd.app/Contents/MacOS/Plugd --headless-open
-    PLUGD_PORT=/dev/ttys008 Plugd.app/Contents/MacOS/Plugd --headless-adapter
-    PLUGD_HOME=/tmp/empty Plugd.app/Contents/MacOS/Plugd --headless-update
-    PLUGD_HOME=/tmp/empty Plugd.app/Contents/MacOS/Plugd --headless-report
-    Plugd.app/Contents/MacOS/Plugd --self-test
-
-FORScan's own installer crashes under Wine 11, so Plugd tries it first. If it fails, Plugd unpacks the same installer with innoextract and copies the files over unchanged.
+Want to change the code? See [BUILDING.md](BUILDING.md).
 
 ## Credits
 
