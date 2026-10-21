@@ -123,6 +123,7 @@ struct PlugdApp: App {
             }
             CommandGroup(replacing: .help) {
                 Link("Plugd on GitHub", destination: URL(string: "https://github.com/lncch/Plugd")!)
+                Link("Like Plugd? Star It on GitHub", destination: URL(string: "https://github.com/lncch/Plugd")!)
                 Button("Report a Problem…") { engine.saveReport() }
                 Divider()
                 Link("FORScan Website", destination: URL(string: "https://forscan.org")!)
@@ -292,6 +293,7 @@ struct ContentView: View {
             Divider()
             Button("Report a Problem…") { engine.saveReport() }
             Link("Plugd on GitHub", destination: Links.github)
+            Link("Like Plugd? Star It on GitHub", destination: Links.github)
             Button("About Plugd") { PlugdApp.showAbout() }
         } label: {
             Label("Help", systemImage: "questionmark.circle")

@@ -14,6 +14,8 @@ So I vibe coded this app. It runs FORScan on my Mac through Wine (free software 
 
 I've used it on my own car and it works.
 
+If you like it, give it a ⭐. It helps other Ford owners find it.
+
 ## What it does
 
 - Installs Wine and downloads FORScan from forscan.org (it doesn't ship FORScan itself)
