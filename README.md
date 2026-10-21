@@ -44,10 +44,6 @@ Back up before you change anything, and keep a battery charger on the car while 
 
 That's one car and one adapter. Intel Macs are new: setup is tested on a real Intel Mac (GitHub's Intel runner), but nobody has tried it with an adapter and a car yet. If you try it on yours, open an issue and tell me how it went.
 
-## For developers
-
-Want to change the code? See [BUILDING.md](BUILDING.md).
-
 ## Credits
 
 FORScan is made by Alexey Savin (forscan.org). I'm not connected to FORScan or Ford. Plugd's code is MIT licensed. FORScan, Wine and innoextract keep their own licenses (see `THIRD_PARTY.md`).
