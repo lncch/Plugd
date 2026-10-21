@@ -68,3 +68,5 @@ FORScan is made by Alexey Savin (forscan.org). I'm not connected to FORScan or F
 ## Contact
 
 Questions or feedback: plugd@almoayyad.dev, or open an issue.
+
+More projects coming. Follow me on [GitHub](https://github.com/lncch) or [X (@1lnch)](https://x.com/1lnch).
