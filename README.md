@@ -10,7 +10,7 @@
 
 I have a Ford Taurus, and every time I wanted to turn a feature on or off with FORScan I had to dig out a Windows laptop. FORScan is Windows only. The usual ways around that on a Mac cost money: CrossOver, or Parallels or downloading a whole VM.
 
-So I vibe coded this app. It runs FORScan on my Mac through Wine (free software that runs Windows programs), and it does the annoying setup for you. You click Set Up, plug in your adapter, and click Open FORScan.
+So I made this app. It runs FORScan on my Mac through Wine (free software that runs Windows programs), and it does the annoying setup for you. You click Set Up, plug in your adapter, and click Open FORScan.
 
 I've used it on my own car and it works.
 
