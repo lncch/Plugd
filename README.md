@@ -38,9 +38,9 @@ Back up before you change anything, and keep a battery charger on the car while 
 
 ## Tested on
 
-| Car | Adapter | Reads | Writes |
-|---|---|---|---|
-| 2023 Ford Taurus, Middle East (Mondeo EVOS, 2021 MY) | cheap ELM327 v1.5 clone, CH340 chip, HS/MS switch | 22+ modules | yes, checked in the car |
+| Car | Adapter | Reads | Writes | Dashboard and codes |
+|---|---|---|---|---|
+| 2023 Ford Taurus, Middle East (Mondeo EVOS, 2021 MY) | cheap ELM327 v1.5 clone, CH340 chip, HS/MS switch | 22+ modules | yes, checked in the car | yes, v0.3.3 |
 
 That's one car and one adapter. Intel Macs are new: setup is tested on a real Intel Mac (GitHub's Intel runner), but nobody has tried it with an adapter and a car yet. If you try it on yours, open an issue and tell me how it went.
 
