@@ -26,8 +26,8 @@ cat > "$APP/Contents/Info.plist" <<'EOF'
   <key>CFBundleIdentifier</key><string>dev.almoayyad.plugd</string>
   <key>CFBundleExecutable</key><string>Plugd</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.3.3</string>
-  <key>CFBundleVersion</key><string>8</string>
+  <key>CFBundleShortVersionString</key><string>0.3.4</string>
+  <key>CFBundleVersion</key><string>9</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>CFBundleIconFile</key><string>AppIcon</string>
@@ -62,7 +62,7 @@ NOTARY=""
 if [ -n "$ID" ] && [ "${NOTARIZE:-1}" = 1 ] && xcrun notarytool history --keychain-profile plugd >/dev/null 2>&1; then
   NOTARY=yes
   ditto -c -k --keepParent "$APP" Plugd.zip
-  xcrun notarytool submit Plugd.zip --keychain-profile plugd --wait | tee /dev/stderr | grep -q 'status: Accepted'
+  xcrun notarytool submit Plugd.zip --keychain-profile plugd --wait | tee /dev/stderr | grep 'status: Accepted' >/dev/null
   xcrun stapler staple "$APP"
 fi
 ditto -c -k --keepParent "$APP" Plugd.zip
@@ -75,7 +75,7 @@ hdiutil create -quiet -volname Plugd -srcfolder "$DMG" -format UDZO Plugd.dmg
 rm -rf "$DMG"
 if [ -n "$NOTARY" ]; then
   codesign --force --timestamp --sign "$ID" Plugd.dmg
-  xcrun notarytool submit Plugd.dmg --keychain-profile plugd --wait | tee /dev/stderr | grep -q 'status: Accepted'
+  xcrun notarytool submit Plugd.dmg --keychain-profile plugd --wait | tee /dev/stderr | grep 'status: Accepted' >/dev/null
   xcrun stapler staple Plugd.dmg
   spctl --assess --type open --context context:primary-signature Plugd.dmg
 fi

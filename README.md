@@ -30,7 +30,7 @@ If you like it, give it a ⭐. It helps other Ford owners find it.
 ## Install
 
 1. [Download Plugd.dmg](https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg), open it, and drag Plugd into Applications.
-2. Open it. The first time, macOS blocks it because I haven't paid Apple to notarize it. Go to System Settings → Privacy & Security and click **Open Anyway**.
+2. Open it. Plugd is notarized by Apple, so it opens like any other app.
 3. Click **Set Up** and accept FORScan's license. It takes about 2 minutes and downloads about 230 MB.
 4. Plug in your adapter and click **Open FORScan**.
 
