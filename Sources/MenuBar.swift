@@ -3,11 +3,12 @@ import SwiftUI
 /// The menu bar menu: adapter status and the main actions, without opening the window.
 struct MenuBarMenu: View {
     @EnvironmentObject var engine: Engine
+    @ObservedObject private var updater = Updater.shared
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        if engine.plugdUpdateAvailable, let latest = engine.plugdLatest {
-            Button("Download Plugd \(latest)…") { NSWorkspace.shared.open(Engine.plugdDownload) }
+        if let latest = updater.latest {
+            Button("Update Plugd to \(latest)…") { updater.checkNow() }
             Divider()
         }
         if engine.ready {

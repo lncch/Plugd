@@ -55,7 +55,6 @@ final class Engine: ObservableObject {
     @Published var license: License?
     @Published var installedVersion: String?
     @Published var latestVersion: String?
-    @Published var plugdLatest: String?
 
     private var eulaAnswer: CheckedContinuation<Bool, Never>?
     private var timer: Timer?
@@ -86,10 +85,7 @@ final class Engine: ObservableObject {
         readLicense()
         readInstalledVersion()
         poll()
-        if Settings.checkUpdates {
-            Task { await checkForscanUpdate() }
-            Task { await checkPlugdUpdate() }
-        }
+        if Settings.checkUpdates { Task { await checkForscanUpdate() } }
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.poll() }
         }

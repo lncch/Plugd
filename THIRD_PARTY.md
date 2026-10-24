@@ -10,3 +10,4 @@ Plugd downloads or bundles these. It ships none of FORScan's files.
 | Boost | Bundled with innoextract | Boost Software License 1.0 |
 | xz / liblzma | Bundled with innoextract | 0BSD / public domain |
 | zstd | Bundled with innoextract | BSD |
+| Sparkle 2.10.0 (sparkle-project.org) | Bundled, updates Plugd itself; full notice in Sparkle-LICENSE.txt next to this file | MIT, plus the notices in that file |

@@ -36,6 +36,8 @@ If you like it, give it a ⭐. It helps other Ford owners find it.
 
 Back up before you change anything, and keep a battery charger on the car while FORScan writes.
 
+From 0.3.5 on, Plugd updates itself. When a new version is out, it tells you; click **Update** and it installs and reopens. Older versions need one manual download of the latest release.
+
 ## Tested on
 
 | Car | Adapter | Reads | Writes | Dashboard and codes |

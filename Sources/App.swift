@@ -30,10 +30,7 @@ struct PlugdApp: App {
         if CommandLine.arguments.contains("--self-test") {
             var fails = DTC.selfTest() + Engine.redactSelfTest() + ELM.liveSelfTest() + Engine.portSelfTest()
             if Engine.setupVersion("FORScanSetup2.3.71.release.exe") != "2.3.71" { fails.append("setupVersion") }
-            if !Engine.older("2.3.9", "2.3.71") || Engine.older("2.3.71", "2.3.71") { fails.append("older") }
-            if Engine.releaseVersion(Data(#"{"tag_name":"v0.3.10","name":"Plugd 0.3.10"}"#.utf8)) != "0.3.10"
-                || Engine.releaseVersion(Data("not json".utf8)) != nil { fails.append("releaseVersion") }
-            // A child that leaves a background process holding the pipe must not hang shell() (Wine installer on Intel).
+            if !Engine.older("2.3.9", "2.3.71") || Engine.older("2.3.71", "2.3.71") { fails.append("older") }            // A child that leaves a background process holding the pipe must not hang shell() (Wine installer on Intel).
             let start = Date()
             _ = Engine.shell("/bin/sh", ["-c", "sleep 30 & exit 0"], timeout: 1)
             if Date().timeIntervalSince(start) > 10 { fails.append("shell waited on a leftover process") }
@@ -119,6 +116,7 @@ struct PlugdApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Plugd") { Self.showAbout() }
+                Button("Check for Updates…") { Updater.shared.checkNow() }
             }
             CommandGroup(replacing: .appSettings) {
                 SettingsButton()
@@ -187,6 +185,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ note: Notification) {
+        _ = Updater.shared   // starts Sparkle
         // Started by "Open at login": stay in the menu bar, don't pop the window up.
         let event = NSAppleEventManager.shared().currentAppleEvent
         if event?.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem, Settings.showMenuBar {
@@ -344,20 +343,21 @@ enum Page: String, CaseIterable, Identifiable {
 
 struct HomePage: View {
     @EnvironmentObject var engine: Engine
+    @ObservedObject private var updater = Updater.shared
     @Binding var page: Page?
     @State private var showLog = false
 
     var body: some View {
-        if engine.plugdUpdateAvailable, let latest = engine.plugdLatest {
+        if let latest = updater.latest {
             HStack(spacing: 12) {
                 Image(systemName: "arrow.down.circle.fill").font(.title2).foregroundStyle(Color.accentColor)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Plugd \(latest) is out").fontWeight(.medium)
-                    Text("You have \(Engine.plugdVersion). Download it, open it, and drag Plugd into Applications to replace this one.")
-                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    Text("You have \(Updater.current). Plugd updates itself and reopens.")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Button("Download") { NSWorkspace.shared.open(Engine.plugdDownload) }
+                Button("Update") { updater.checkNow() }
                     .buttonStyle(.borderedProminent)
             }
             .padding(14)

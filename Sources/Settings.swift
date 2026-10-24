@@ -56,6 +56,7 @@ struct SettingsPage: View {
             if !showMenuBar { showDock = true }
             Settings.applyDock()
         }
+        .onChange(of: checkUpdates) { Updater.shared.setAutomatic(checkUpdates) }
         .onChange(of: showDock) {
             Settings.applyDock()
             // Leaving the Dock moves the window behind other apps; bring it back.
