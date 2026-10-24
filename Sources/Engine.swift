@@ -13,7 +13,10 @@ final class Engine: ObservableObject {
     /// SHA-256 that GitHub publishes for that file; a download that doesn't match is never unpacked.
     static let wineSHA256 = "b63704b91af269bc026a87f12bd297c4a50caaf570c322e600b6621ef918f127"
     nonisolated static let forscanPage = URL(string: "https://forscan.org/download.html")!
-    static let portPrefixes = ["cu.usbserial", "cu.wchusbserial", "cu.usbmodem", "cu.SLAB_USBtoUART"]
+    nonisolated static let usbPrefixes = ["cu.usbserial", "cu.wchusbserial", "cu.usbmodem", "cu.SLAB_USBtoUART"]
+    /// A paired Bluetooth device gets a /dev/cu.<its name> port (AirPods too), so Bluetooth adapters are found by name.
+    /// Matched after dropping case and punctuation: "OBDLink MX+", "V-LINK", "vLinker MC+", "Vgate iCar".
+    nonisolated static let bluetoothWords = ["obd", "elm327", "vlink", "vgate", "veepeak"]
 
     let base: URL
     var wineApp: URL { base.appendingPathComponent("wine/Wine Staging.app") }
@@ -52,6 +55,7 @@ final class Engine: ObservableObject {
     @Published var license: License?
     @Published var installedVersion: String?
     @Published var latestVersion: String?
+    @Published var plugdLatest: String?
 
     private var eulaAnswer: CheckedContinuation<Bool, Never>?
     private var timer: Timer?
@@ -82,7 +86,10 @@ final class Engine: ObservableObject {
         readLicense()
         readInstalledVersion()
         poll()
-        if Settings.checkUpdates { Task { await checkForscanUpdate() } }
+        if Settings.checkUpdates {
+            Task { await checkForscanUpdate() }
+            Task { await checkPlugdUpdate() }
+        }
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.poll() }
         }
@@ -106,12 +113,54 @@ final class Engine: ObservableObject {
             port = fake
         } else {
             let names = (try? FileManager.default.contentsOfDirectory(atPath: "/dev")) ?? []
-            port = names.filter { n in Self.portPrefixes.contains { n.hasPrefix($0) } }.sorted().first.map { "/dev/" + $0 }
+            port = Self.pickPort(names, chosen: Settings.adapterPort)
         }
         running = Self.forscanRunning(in: forscanDir)
         if !serialBusy { portHeld = Self.portHeld(port) }
         refreshFiles()
     }
+
+    /// Serial ports a person can pick in Settings: every cu.* port except the Mac's own.
+    nonisolated static func serialPorts(_ names: [String]) -> [String] {
+        names.filter { $0.hasPrefix("cu.") && !$0.contains("Bluetooth-Incoming-Port") && !$0.contains("debug") }.sorted()
+    }
+
+    nonisolated static func isUSB(_ port: String) -> Bool {
+        let name = (port as NSString).lastPathComponent
+        return usbPrefixes.contains { name.hasPrefix($0) }
+    }
+
+    /// The port picked in Settings if it's there, else a USB adapter, else a Bluetooth one with an adapter-like name.
+    nonisolated static func pickPort(_ names: [String], chosen: String) -> String? {
+        if !chosen.isEmpty, names.contains(chosen) { return "/dev/" + chosen }
+        let ports = serialPorts(names)
+        let bluetooth = ports.first { n in
+            let s = n.lowercased().filter { $0.isLetter || $0.isNumber }
+            return bluetoothWords.contains { s.contains($0) }
+        }
+        return (ports.first(where: isUSB) ?? bluetooth).map { "/dev/" + $0 }
+    }
+
+    nonisolated static func portSelfTest() -> [String] {
+        let mac = ["cu.Bluetooth-Incoming-Port", "cu.debug-console", "cu.wlan-debug", "cu.AlmoayadsAirPodsPro", "tty.OBDLinkMXPlus"]
+        var fails: [String] = []
+        func check(_ names: [String], _ chosen: String, _ want: String?) {
+            let got = pickPort(names, chosen: chosen)
+            if got != want { fails.append("pickPort(\(names), \"\(chosen)\") = \(got ?? "nil"), want \(want ?? "nil")") }
+        }
+        check(mac, "", nil)                                                      // AirPods and the Mac's own ports are not adapters
+        check(mac + ["cu.OBDLinkMXPlus"], "", "/dev/cu.OBDLinkMXPlus")
+        check(mac + ["cu.V-LINK", "cu.usbserial-120"], "", "/dev/cu.usbserial-120") // USB wins: a paired adapter's port stays when it's off
+        check(mac + ["cu.vLinkerMC-Android"], "", "/dev/cu.vLinkerMC-Android")
+        check(mac + ["cu.usbserial-120"], "cu.AlmoayadsAirPodsPro", "/dev/cu.AlmoayadsAirPodsPro") // a pick in Settings wins
+        check(mac + ["cu.usbserial-120"], "cu.Gone", "/dev/cu.usbserial-120")       // a pick that's gone falls back to automatic
+        if serialPorts(mac) != ["cu.AlmoayadsAirPodsPro"] { fails.append("serialPorts \(serialPorts(mac))") }
+        if !isUSB("/dev/cu.wchusbserial-10") || isUSB("/dev/cu.OBDLinkMXPlus") { fails.append("isUSB") }
+        return fails
+    }
+
+    /// A paired Bluetooth adapter keeps its port while it's off or out of range, so it only counts as connected once it answers.
+    var bluetoothWaiting: Bool { port.map { !Self.isUSB($0) } == true && adapter == nil }
 
     func refreshFiles() {
         let keys: [URLResourceKey] = [.contentModificationDateKey, .isRegularFileKey]

@@ -4,7 +4,7 @@
 
 <p align="center">FORScan on a Mac, for free.</p>
 
-<p align="center"><a href="https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg"><b>Download for Mac</b></a> · macOS 14+ · Apple Silicon or Intel · USB OBD adapter</p>
+<p align="center"><a href="https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg"><b>Download for Mac</b></a> · macOS 14+ · Apple Silicon or Intel · USB or Bluetooth OBD adapter</p>
 
 <p align="center"><img src="docs/img/setup.png" width="420" alt="Setup screen"> <img src="docs/img/main.png" width="420" alt="Main screen"></p>
 
@@ -19,7 +19,7 @@ If you like it, give it a ⭐. It helps other Ford owners find it.
 ## What it does
 
 - Installs Wine and downloads FORScan from forscan.org (it doesn't ship FORScan itself)
-- Finds your USB OBD adapter and connects FORScan to it
+- Finds your USB OBD adapter, or a paired Bluetooth one, and connects FORScan to it
 - Gives FORScan a folder on your Mac (it shows up as drive O:) for license keys and As-Built backups
 - Warns you when you don't have a backup yet
 - Reads engine codes and battery voltage without opening FORScan
@@ -43,6 +43,8 @@ Back up before you change anything, and keep a battery charger on the car while 
 | 2023 Ford Taurus, Middle East (Mondeo EVOS, 2021 MY) | cheap ELM327 v1.5 clone, CH340 chip, HS/MS switch | 22+ modules | yes, checked in the car | yes, v0.3.3 |
 
 That's one car and one adapter. Intel Macs are new: setup is tested on a real Intel Mac (GitHub's Intel runner), but nobody has tried it with an adapter and a car yet. If you try it on yours, open an issue and tell me how it went.
+
+Bluetooth adapters are new in 0.3.5 and nobody has tested one yet. Pair it in System Settings first. Bluetooth Classic adapters like the OBDLink MX+ can work. Bluetooth LE only ones can't, because macOS gives them no serial port. If you have one, please try it and open an issue.
 
 ## Credits
 

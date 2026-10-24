@@ -8,6 +8,8 @@ enum Settings {
     static var showMenuBar: Bool { on("showMenuBar") }
     static var showDock: Bool { on("showDock") || !showMenuBar }   // never hide both, or Plugd can't be reached
     static var checkUpdates: Bool { on("checkUpdates") }
+    /// A /dev name like "cu.OBDLinkMXPlus"; empty means find the adapter automatically.
+    static var adapterPort: String { UserDefaults.standard.string(forKey: "adapterPort") ?? "" }
 
     static func applyDock() {
         NSApp.setActivationPolicy(showDock ? .regular : .accessory)
@@ -19,6 +21,7 @@ struct SettingsPage: View {
     @AppStorage("showDock") private var showDock = true
     @AppStorage("checkUpdates") private var checkUpdates = true
     @AppStorage("seenWelcome") private var seenWelcome = false
+    @AppStorage("adapterPort") private var adapterPort = ""
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginError: String?
 
@@ -36,7 +39,16 @@ struct SettingsPage: View {
             row("Show in Dock", showMenuBar ? "Turn off to keep Plugd only in the menu bar." : "Needed while the menu bar icon is off, so you can reach Plugd.", isOn: $showDock)
                 .disabled(!showMenuBar)
             Divider()
-            row("Check for FORScan updates", "Looks at forscan.org when Plugd starts and tells you when a new version is out.", isOn: $checkUpdates)
+            row("Check for updates", "When Plugd starts, it looks at forscan.org and GitHub and tells you when a new FORScan or Plugd is out.", isOn: $checkUpdates)
+            Divider()
+            row("Adapter", "Automatic finds USB adapters, and paired Bluetooth ones with OBD in the name. Pick yours if Plugd misses it.") {
+                Picker("Adapter", selection: $adapterPort) {
+                    Text("Automatic").tag("")
+                    ForEach(portChoices, id: \.self) { Text($0.dropFirst(3)).tag($0) }
+                }
+                .labelsHidden()
+                .fixedSize()
+            }
         }
         .padding(.horizontal, 16)
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
@@ -53,14 +65,24 @@ struct SettingsPage: View {
         Button("Show the Welcome Again") { seenWelcome = false }
     }
 
+    /// Ports on this Mac now, plus the saved choice if its adapter isn't paired at the moment.
+    private var portChoices: [String] {
+        let ports = Engine.serialPorts((try? FileManager.default.contentsOfDirectory(atPath: "/dev")) ?? [])
+        return adapterPort.isEmpty || ports.contains(adapterPort) ? ports : ports + [adapterPort]
+    }
+
     private func row(_ title: String, _ detail: String, isOn: Binding<Bool>) -> some View {
+        row(title, detail) { Toggle(title, isOn: isOn).toggleStyle(.switch).labelsHidden() }
+    }
+
+    private func row<Control: View>(_ title: String, _ detail: String, @ViewBuilder control: () -> Control) -> some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                 Text(detail).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
-            Toggle(title, isOn: isOn).toggleStyle(.switch).labelsHidden()
+            control()
         }
         .padding(.vertical, 12)
     }

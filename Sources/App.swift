@@ -28,9 +28,11 @@ struct PlugdApp: App {
         }
         // Test hook: run the parser and redaction checks, exit 1 on any failure.
         if CommandLine.arguments.contains("--self-test") {
-            var fails = DTC.selfTest() + Engine.redactSelfTest() + ELM.liveSelfTest()
+            var fails = DTC.selfTest() + Engine.redactSelfTest() + ELM.liveSelfTest() + Engine.portSelfTest()
             if Engine.setupVersion("FORScanSetup2.3.71.release.exe") != "2.3.71" { fails.append("setupVersion") }
             if !Engine.older("2.3.9", "2.3.71") || Engine.older("2.3.71", "2.3.71") { fails.append("older") }
+            if Engine.releaseVersion(Data(#"{"tag_name":"v0.3.10","name":"Plugd 0.3.10"}"#.utf8)) != "0.3.10"
+                || Engine.releaseVersion(Data("not json".utf8)) != nil { fails.append("releaseVersion") }
             // A child that leaves a background process holding the pipe must not hang shell() (Wine installer on Intel).
             let start = Date()
             _ = Engine.shell("/bin/sh", ["-c", "sleep 30 & exit 0"], timeout: 1)
@@ -324,7 +326,7 @@ enum Page: String, CaseIterable, Identifiable {
         case .codes: "A quick look at the engine's trouble codes, without FORScan."
         case .files: "License keys, profiles and As-Built backups. FORScan sees them as drive O:."
         case .guide: "Short steps for the things people do most."
-        case .settings: "How Plugd starts and where it shows up."
+        case .settings: "How Plugd starts, where it shows up, and which adapter it uses."
         }
     }
 
@@ -346,6 +348,21 @@ struct HomePage: View {
     @State private var showLog = false
 
     var body: some View {
+        if engine.plugdUpdateAvailable, let latest = engine.plugdLatest {
+            HStack(spacing: 12) {
+                Image(systemName: "arrow.down.circle.fill").font(.title2).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Plugd \(latest) is out").fontWeight(.medium)
+                    Text("You have \(Engine.plugdVersion). Download it, open it, and drag Plugd into Applications to replace this one.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Button("Download") { NSWorkspace.shared.open(Engine.plugdDownload) }
+                    .buttonStyle(.borderedProminent)
+            }
+            .padding(14)
+            .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+        }
         ForscanCard()
         HStack(spacing: 12) {
             SummaryTile(title: "Engine codes", value: codesValue, icon: "engine.combustion", warn: codesWarn) { page = .codes }
@@ -468,7 +485,7 @@ struct WelcomeView: View {
     private var needs: some View {
         VStack(alignment: .leading, spacing: 22) {
             Text("What you need").font(.largeTitle.weight(.bold))
-            WelcomeRow(icon: "cable.connector", title: "A USB OBD adapter",
+            WelcomeRow(icon: "cable.connector", title: "A USB or Bluetooth OBD adapter",
                        detail: "An ELM327 with an HS/MS switch works. It plugs in under the dashboard.")
             WelcomeRow(icon: "car.fill", title: "A Ford, Lincoln or Mazda",
                        detail: "Turn the ignition on. The engine can stay off.")
@@ -642,9 +659,15 @@ struct ForscanCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Circle().fill(engine.port == nil ? Color.secondary.opacity(0.5) : .green).frame(width: 9, height: 9)
+                Circle().fill(engine.port == nil || engine.bluetoothWaiting ? Color.secondary.opacity(0.5) : .green).frame(width: 9, height: 9)
                 Text(adapterTitle).fontWeight(.medium)
                 Spacer()
+                if engine.bluetoothWaiting && !engine.running {
+                    Button("Connect") { Task { await engine.probeAdapter() } }
+                        .controlSize(.small)
+                        .disabled(!engine.canUseAdapter)
+                        .help("Plug the adapter into the car first. Plugd then checks that it answers.")
+                }
                 if let volts = engine.adapter?.volts {
                     Button { Task { await engine.probeAdapter() } } label: {
                         Label("Car battery \(volts)", systemImage: "bolt.fill").font(.caption.monospacedDigit())
@@ -658,7 +681,7 @@ struct ForscanCard: View {
             .accessibilityElement(children: .combine)
             if engine.port == nil {
                 HStack(spacing: 4) {
-                    Text("Plug in a USB OBD adapter.").foregroundStyle(.secondary)
+                    Text("Plug in a USB OBD adapter, or pair a Bluetooth one.").foregroundStyle(.secondary)
                     Link("Which one do I need?", destination: Links.adapters)
                 }
                 .font(.caption)
@@ -703,6 +726,7 @@ struct ForscanCard: View {
     private var adapterTitle: String {
         guard engine.port != nil else { return "No adapter plugged in" }
         if engine.running { return "Adapter in use by FORScan" }
+        if engine.bluetoothWaiting { return engine.serialBusy ? "Connecting to the Bluetooth adapter…" : "Bluetooth adapter paired" }
         let name = [engine.chip, engine.adapter?.version].compactMap { $0 }.joined(separator: " · ")
         return name.isEmpty ? "Adapter connected" : "\(name) connected"
     }

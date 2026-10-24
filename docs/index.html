@@ -13,7 +13,7 @@
 <meta property="og:image" content="https://plugd.almoayyad.dev/img/main.png?v=0.3.2">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Plugd","description":"Runs FORScan, the Ford diagnostic tool, on a Mac with Wine. Free and open source.","url":"https://plugd.almoayyad.dev/","downloadUrl":"https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg","applicationCategory":"UtilitiesApplication","operatingSystem":"macOS 14 or later","softwareVersion":"0.3.4","license":"https://opensource.org/licenses/MIT","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Almoayyad Abuljdail","url":"https://almoayyad.dev"}}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Plugd","description":"Runs FORScan, the Ford diagnostic tool, on a Mac with Wine. Free and open source.","url":"https://plugd.almoayyad.dev/","downloadUrl":"https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg","applicationCategory":"UtilitiesApplication","operatingSystem":"macOS 14 or later","softwareVersion":"0.3.5","license":"https://opensource.org/licenses/MIT","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Almoayyad Abuljdail","url":"https://almoayyad.dev"}}
 </script>
 <link rel="icon" href="img/icon.png?v=0.3.2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -114,7 +114,7 @@ footer p + p { margin-top: 8px; }
       <a class="btn primary" href="https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg">Download for Mac</a>
       <a class="btn" href="https://github.com/lncch/Plugd">★ Star on GitHub</a>
     </div>
-    <p class="req">One download for Apple Silicon and Intel · macOS 14 or later · USB OBD adapter · v0.3.4</p>
+    <p class="req">One download for Apple Silicon and Intel · macOS 14 or later · USB or Bluetooth OBD adapter · v0.3.5</p>
     <p class="req">Like it? A star on GitHub helps other Ford owners find it.</p>
   </header>
 
@@ -130,7 +130,7 @@ footer p + p { margin-top: 8px; }
     <p class="lead">FORScan is a Windows app. Plugd runs it with Wine, a free layer that runs Windows programs on macOS, and connects it to your adapter.</p>
     <div class="steps">
       <div class="step"><h3>Set up once</h3><p>Installs Rosetta, downloads Wine, and gets the official FORScan installer from forscan.org. You read and accept FORScan's license.</p></div>
-      <div class="step"><h3>Plug in</h3><p>Plugd spots your USB adapter and maps it to COM1, the port FORScan expects. Changed USB ports? It remaps.</p></div>
+      <div class="step"><h3>Plug in</h3><p>Plugd spots your USB adapter, or a paired Bluetooth one, and maps it to COM1, the port FORScan expects. Changed USB ports? It remaps.</p></div>
       <div class="step"><h3>Open FORScan</h3><p>The full Windows FORScan, with its Extended license, configuration, and As-Built editing.</p></div>
     </div>
     <div class="steps" style="grid-template-columns:1fr 1fr">
@@ -184,7 +184,8 @@ footer p + p { margin-top: 8px; }
         <tr><td>USB ELM327 with CH340 chip</td><td><span class="ok">✓</span> Tested</td></tr>
         <tr><td>USB with FTDI, CP210x or PL2303 chip (OBDLink EX, vLinker FS USB)</td><td>Should work, not tested yet</td></tr>
         <tr><td>Wi-Fi ELM327</td><td>Maybe, through FORScan's own network setting. Not tested.</td></tr>
-        <tr><td>Bluetooth ELM327</td><td>No</td></tr>
+        <tr><td>Bluetooth Classic, like the OBDLink MX+</td><td>New in 0.3.5, not tested yet</td></tr>
+        <tr><td>Bluetooth LE only</td><td>No, macOS gives them no serial port</td></tr>
         <tr><td>J2534 tools (VCM II, VXDIAG)</td><td>No, they need Windows drivers</td></tr>
       </tbody>
     </table>
@@ -202,7 +203,9 @@ footer p + p { margin-top: 8px; }
     </details>
     <details id="adapters">
       <summary>Which adapters work?</summary>
-      <p>USB adapters that show up as a serial port: ELM327 clones with CH340, FTDI, CP210x or PL2303 chips, OBDLink EX, vLinker FS USB. Bluetooth adapters don't work, and Wi-Fi ones are untested. See <a href="#tested">Works with</a>. FORScan may warn that a cheap ELM327 is "not recommended"; ours still read and wrote fine.</p>
+      <p>USB adapters that show up as a serial port: ELM327 clones with CH340, FTDI, CP210x or PL2303 chips, OBDLink EX, vLinker FS USB. Wi-Fi ones are untested.</p>
+      <p>Bluetooth Classic adapters, like the OBDLink MX+, are new in 0.3.5 and not tested yet. Pair it in System Settings → Bluetooth, plug it into the car, then click <b>Connect</b> on Plugd's Home. If Plugd doesn't find it, pick it in Settings → Adapter. Bluetooth LE only adapters can't work, because macOS gives them no serial port.</p>
+      <p>See <a href="#tested">Works with</a>. FORScan may warn that a cheap ELM327 is "not recommended"; ours still read and wrote fine.</p>
     </details>
     <details>
       <summary>FORScan asks me to flip the HS/MS switch</summary>

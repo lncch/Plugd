@@ -19,7 +19,7 @@ extension Engine {
             adapter = nil
             codes = nil
             codesCheckedAt = nil
-            chip = port == nil ? nil : Self.usbChip()
+            chip = port.map(Self.isUSB) == true ? Self.usbChip() : nil
             if port != nil { Task { await probeAdapter() } }
         }
         if wasRunning && !running {
@@ -159,6 +159,27 @@ extension Engine {
             say("Update stopped: \(error.localizedDescription)")
         }
     }
+
+    // MARK: - Plugd updates
+
+    nonisolated static let plugdRelease = URL(string: "https://api.github.com/repos/lncch/Plugd/releases/latest")!
+    nonisolated static let plugdDownload = URL(string: "https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg")!
+    nonisolated static var plugdVersion: String { Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0" }
+
+    /// The version in GitHub's latest-release JSON: tag "v0.3.6" gives "0.3.6".
+    nonisolated static func releaseVersion(_ json: Data) -> String? {
+        struct Release: Decodable { let tag_name: String }
+        return (try? JSONDecoder().decode(Release.self, from: json)).map { String($0.tag_name.drop { $0 == "v" }) }
+    }
+
+    func checkPlugdUpdate() async {
+        // PLUGD_LATEST fakes a newer release, for tests and screenshots.
+        if let fake = ProcessInfo.processInfo.environment["PLUGD_LATEST"] { plugdLatest = fake; return }
+        guard let (data, _) = try? await URLSession.shared.data(from: Self.plugdRelease) else { return }
+        plugdLatest = Self.releaseVersion(data)
+    }
+
+    var plugdUpdateAvailable: Bool { plugdLatest.map { Self.older(Self.plugdVersion, $0) } ?? false }
 
     // MARK: - Backups
 

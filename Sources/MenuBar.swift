@@ -6,6 +6,10 @@ struct MenuBarMenu: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
+        if engine.plugdUpdateAvailable, let latest = engine.plugdLatest {
+            Button("Download Plugd \(latest)…") { NSWorkspace.shared.open(Engine.plugdDownload) }
+            Divider()
+        }
         if engine.ready {
             Text(status)
             if let volts = engine.adapter?.volts { Text("Car battery \(volts)") }
@@ -31,6 +35,7 @@ struct MenuBarMenu: View {
     private var status: String {
         guard engine.port != nil else { return "No adapter plugged in" }
         if engine.running { return "FORScan is open" }
+        if engine.bluetoothWaiting { return "Bluetooth adapter paired" }
         return "\(engine.adapter?.version ?? "Adapter") connected"
     }
 
