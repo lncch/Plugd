@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><!-- sparkle-sign-warning:
+IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
+--><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+<channel>
+<title>Plugd</title>
+<item>
+<title>Plugd 0.3.5</title>
+<pubDate>Sat, 24 Oct 2026 15:19:55 +0000</pubDate>
+<sparkle:version>10</sparkle:version>
+<sparkle:shortVersionString>0.3.5</sparkle:shortVersionString>
+<sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+<sparkle:fullReleaseNotesLink>https://github.com/lncch/Plugd/releases/tag/v0.3.5</sparkle:fullReleaseNotesLink>
+<description><![CDATA[<h3>What's new in Plugd 0.3.5</h3><ul><li>Bluetooth adapters: pair one in System Settings and Plugd finds it. This is new and not tested with a real adapter yet, so tell me how it goes.</li>
+<li>If Plugd doesn't find your adapter, pick it in Settings &gt; Adapter.</li>
+<li>Plugd now updates itself. When a new version is out, click Update and it installs and reopens.</li></ul>]]></description>
+<enclosure url="https://github.com/lncch/Plugd/releases/download/v0.3.5/Plugd.zip" sparkle:edSignature="8L6GbeAh9R2wvWN6yA97kGu+UvxTmmKoX3mPugl+9ib6QUTkBwYhT4gVu0U2x/gJ0w73r7Nvf8YBlWBS8F/1Ag==" length="5703037" type="application/octet-stream"></enclosure>
+</item>
+</channel>
+</rss><!-- sparkle-signatures:
+edSignature: vQFIPfymc8vEkfqoCSdaAKjYqWs8c78X6YXWzCVxT1fBDNYWW5Arlh5rFp62MQ9Z+B/TEf/qLiEH0nDRvU+nBQ==
+length: 1473
+-->
