@@ -74,6 +74,7 @@ cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 [ -f brand/Assets.car ] && cp brand/Assets.car "$APP/Contents/Resources/Assets.car"
 cp THIRD_PARTY.md "$APP/Contents/Resources/THIRD_PARTY.md"
 cp vendor/sparkle/LICENSE "$APP/Contents/Resources/Sparkle-LICENSE.txt"
+cp CHANGELOG.md "$APP/Contents/Resources/CHANGELOG.md"   # What's New
 "${SIGN[@]}" "$APP"
 # Notarize (Apple's malware check) when the "plugd" notarytool profile exists; NOTARIZE=0 skips it.
 NOTARY=""

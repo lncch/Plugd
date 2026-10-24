@@ -28,7 +28,7 @@ struct PlugdApp: App {
         }
         // Test hook: run the parser and redaction checks, exit 1 on any failure.
         if CommandLine.arguments.contains("--self-test") {
-            var fails = DTC.selfTest() + Engine.redactSelfTest() + ELM.liveSelfTest() + Engine.portSelfTest()
+            var fails = DTC.selfTest() + Engine.redactSelfTest() + ELM.liveSelfTest() + Engine.portSelfTest() + Updater.notesSelfTest()
             if Engine.setupVersion("FORScanSetup2.3.71.release.exe") != "2.3.71" { fails.append("setupVersion") }
             if !Engine.older("2.3.9", "2.3.71") || Engine.older("2.3.71", "2.3.71") { fails.append("older") }            // A child that leaves a background process holding the pipe must not hang shell() (Wine installer on Intel).
             let start = Date()
@@ -203,6 +203,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct ContentView: View {
     @EnvironmentObject var engine: Engine
     @AppStorage("seenWelcome") private var seenWelcome = false
+    /// The version whose What's New was last shown; a new version shows it once.
+    @AppStorage("whatsNewSeen") private var whatsNewSeen = ""
+    @State private var showWhatsNew = false
     // PLUGD_PAGE opens a page directly, for screenshots.
     @State private var page: Page? = Page(rawValue: ProcessInfo.processInfo.environment["PLUGD_PAGE"] ?? "") ?? .home
     @State private var dropTargeted = false
@@ -212,7 +215,8 @@ struct ContentView: View {
             if page == .settings && !engine.ready {
                 ScrollView { SettingsPage().frame(maxWidth: 560).padding(40) }.frame(maxWidth: .infinity)
             } else if !seenWelcome {
-                WelcomeView { seenWelcome = true }
+                // Someone who just installed doesn't need What's New on top of the welcome.
+                WelcomeView { seenWelcome = true; whatsNewSeen = Updater.current }
             } else if !engine.ready {
                 SetupPanel().frame(maxWidth: 520).padding(40)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -256,10 +260,12 @@ struct ContentView: View {
             }
             .navigationSplitViewColumnWidth(200)
             .safeAreaInset(edge: .bottom) {
-                Text("Plugd \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")")
+                Button("Plugd \(Updater.current) · What's New") { showWhatsNew = true }
+                    .buttonStyle(.plain)
                     .font(.caption).foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(16)
+                    .disabled(Updater.currentNotes.isEmpty)
             }
         } detail: {
             let current = page ?? .home
@@ -283,6 +289,12 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .navigationTitle(current.title)
+        }
+        .onAppear {
+            if whatsNewSeen != Updater.current { showWhatsNew = !Updater.currentNotes.isEmpty }
+        }
+        .sheet(isPresented: $showWhatsNew, onDismiss: { whatsNewSeen = Updater.current }) {
+            WhatsNewSheet(notes: Updater.currentNotes) { showWhatsNew = false }
         }
     }
 
