@@ -44,9 +44,6 @@ From 0.3.5 on, Plugd updates itself. When a new version is out, it tells you; cl
 |---|---|---|---|---|
 | 2023 Ford Taurus, Middle East (Mondeo EVOS, 2021 MY) | cheap ELM327 v1.5 clone, CH340 chip, HS/MS switch | 22+ modules | yes, checked in the car | yes, v0.3.3 |
 
-That's one car and one adapter. Intel Macs are new: setup is tested on a real Intel Mac (GitHub's Intel runner), but nobody has tried it with an adapter and a car yet. If you try it on yours, open an issue and tell me how it went.
-
-Bluetooth adapters are new in 0.3.5 and nobody has tested one yet. Pair it in System Settings first. Bluetooth Classic adapters like the OBDLink MX+ can work. Bluetooth LE only ones can't, because macOS gives them no serial port. If you have one, please try it and open an issue.
 
 ## Credits
 
