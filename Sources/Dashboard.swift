@@ -99,7 +99,7 @@ private struct Gauge: View {
             Text(pid.name).font(.caption).foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(value.map(format) ?? "–").font(.system(size: 28, weight: .semibold, design: .rounded).monospacedDigit())
-                    .contentTransition(.numericText())
+                    .numberTransition()
                 Text(pid.unit).font(.callout).foregroundStyle(.secondary)
             }
         }
@@ -111,5 +111,12 @@ private struct Gauge: View {
 
     private func format(_ v: Double) -> String {
         pid.unit == "V" ? String(format: "%.1f", v) : String(format: "%.0f", v)
+    }
+}
+
+private extension View {
+    /// Digits roll when a value changes; macOS 12 just swaps them.
+    @ViewBuilder func numberTransition() -> some View {
+        if #available(macOS 13, *) { contentTransition(.numericText()) } else { self }
     }
 }

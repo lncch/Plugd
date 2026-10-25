@@ -4,7 +4,7 @@
 
 <p align="center">FORScan on a Mac, for free.</p>
 
-<p align="center"><a href="https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg"><b>Download for Mac</b></a> · macOS 14+ · Apple Silicon or Intel · USB or Bluetooth OBD adapter</p>
+<p align="center"><a href="https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg"><b>Download for Mac</b></a> · macOS 12+ · Apple Silicon or Intel · USB or Bluetooth OBD adapter</p>
 
 <p align="center"><img src="docs/img/setup.png" width="420" alt="Setup screen"> <img src="docs/img/main.png" width="420" alt="Main screen"></p>
 
@@ -24,7 +24,7 @@ If you like it, give it a ⭐. It helps other Ford owners find it.
 - Warns you when you don't have a backup yet
 - Reads engine codes and battery voltage without opening FORScan
 - Shows a live dashboard (RPM, speed, temperatures, fuel and more) while FORScan is closed
-- Lives in the menu bar if you want, and can start at login
+- Lives in the menu bar if you want, and can start at login (macOS 13 or later)
 - Tells you when a new FORScan version is out, and when your license runs out
 
 ## Install

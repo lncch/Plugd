@@ -4,17 +4,17 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 APP=Plugd.app
-VERSION=0.3.5
-BUILD=10   # Sparkle compares this number, so it goes up by one every release
+VERSION=0.3.6
+BUILD=11   # Sparkle compares this number, so it goes up by one every release
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/bin" "$APP/Contents/Resources/lib" "$APP/Contents/Frameworks"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/bin" "$APP/Contents/Frameworks"
 
-# Universal: Apple Silicon and Intel.
-[ -d vendor/x86 ] || ./tools/innoextract-x86.sh
+# Universal: Apple Silicon and Intel, macOS 12 and newer.
+[ -f vendor/innoextract/innoextract ] || ./tools/innoextract.sh
 [ -d vendor/sparkle ] || ./tools/sparkle.sh
 OBJ=$(mktemp -d)
 for a in arm64 x86_64; do
-  swiftc -O -parse-as-library -target $a-apple-macos14.0 -F vendor/sparkle -framework Sparkle \
+  swiftc -O -parse-as-library -target $a-apple-macos12.0 -F vendor/sparkle -framework Sparkle \
     -Xlinker -rpath -Xlinker @executable_path/../Frameworks Sources/*.swift -o "$OBJ/Plugd-$a"
 done
 lipo -create "$OBJ"/Plugd-* -output "$APP/Contents/MacOS/Plugd"
@@ -32,7 +32,7 @@ cat > "$APP/Contents/Info.plist" <<EOF
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
   <key>CFBundleVersion</key><string>$BUILD</string>
-  <key>LSMinimumSystemVersion</key><string>14.0</string>
+  <key>LSMinimumSystemVersion</key><string>12.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleIconName</key><string>Plugd</string>
@@ -45,21 +45,11 @@ cat > "$APP/Contents/Info.plist" <<EOF
 </plist>
 EOF
 
-# innoextract (zlib license) plus its Homebrew libraries, rewritten to load from the bundle.
-cp "$(readlink -f "$(command -v innoextract)")" "$APP/Contents/Resources/bin/innoextract"
-chmod u+w "$APP/Contents/Resources/bin/innoextract"
-dylibbundler -of -b -x "$APP/Contents/Resources/bin/innoextract" \
-  -d "$APP/Contents/Resources/lib" -p @executable_path/../lib >/dev/null
-
-# Add the Intel half (built by tools/innoextract-x86.sh) to innoextract and each library.
-for g in "$APP/Contents/Resources/bin/innoextract" "$APP/Contents/Resources/lib/"*.dylib; do
-  lipo -create "$g" "vendor/x86/${g#"$APP/Contents/Resources/"}" -output "$g.fat"
-  mv "$g.fat" "$g"
-done
+# innoextract (zlib license), built from source by tools/innoextract.sh with Boost and liblzma linked in.
+cp vendor/innoextract/innoextract "$APP/Contents/Resources/bin/innoextract"
 # Signing: Developer ID + hardened runtime when that certificate is in the keychain, else ad-hoc (local only).
 ID=$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)
 if [ -n "$ID" ]; then SIGN=(codesign --force --options runtime --timestamp --sign "$ID"); else SIGN=(codesign --force --sign -); fi
-"${SIGN[@]}" "$APP/Contents/Resources/lib/"*.dylib
 "${SIGN[@]}" "$APP/Contents/Resources/bin/innoextract"
 # Sparkle, Plugd's updater. Plugd isn't sandboxed, so Sparkle's XPC helpers aren't needed.
 # Sign each part on its own, inside out; Sparkle's docs warn against --deep.

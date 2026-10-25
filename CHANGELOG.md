@@ -3,6 +3,9 @@
 Plugd shows the newest section in its update window and in "What's New" after an update.
 Keep each line plain text, one change per "- " line.
 
+## 0.3.6
+- Plugd now runs on macOS 12 Monterey, so older Macs like a 2015 MacBook Air work too. On macOS 12 there's no menu bar icon or Open at login.
+
 ## 0.3.5
 - Bluetooth adapters: pair one in System Settings and Plugd finds it. This is new and not tested with a real adapter yet, so tell me how it goes.
 - If Plugd doesn't find your adapter, pick it in Settings > Adapter.

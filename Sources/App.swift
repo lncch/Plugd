@@ -1,12 +1,19 @@
 import SwiftUI
 
-@main
-struct PlugdApp: App {
-    @NSApplicationDelegateAdaptor private var delegate: AppDelegate
-    @StateObject private var engine = Engine()
-    @AppStorage("showMenuBar") private var showMenuBar = true
+/// What this Mac's macOS can do.
+enum OS {
+    /// False on macOS 12, which has no single-window scene, no menu bar item (MenuBarExtra)
+    /// and no Open at login (SMAppService). PLUGD_LEGACY=1 takes the macOS 12 path on a newer Mac, for testing.
+    static let modern: Bool = {
+        guard #available(macOS 13, *) else { return false }
+        return ProcessInfo.processInfo.environment["PLUGD_LEGACY"] == nil
+    }()
+}
 
-    init() {
+/// Runs the test hooks, then starts PlugdApp, or PlugdLegacyApp on macOS 12.
+@main
+enum Launcher {
+    @MainActor static func main() {
         // Test hook: run the whole setup with no window, print the log, exit.
         if CommandLine.arguments.contains("--headless-setup") {
             let e = Engine()
@@ -104,7 +111,15 @@ struct PlugdApp: App {
             }
             RunLoop.main.run()
         }
+        if #available(macOS 13, *), OS.modern { PlugdApp.main() } else { PlugdLegacyApp.main() }
     }
+}
+
+@available(macOS 13, *)
+struct PlugdApp: App {
+    @NSApplicationDelegateAdaptor private var delegate: AppDelegate
+    @StateObject private var engine = Engine()
+    @AppStorage("showMenuBar") private var showMenuBar = true
 
     var body: some Scene {
         Window("Plugd", id: "main") {
@@ -113,26 +128,50 @@ struct PlugdApp: App {
         }
         .defaultSize(width: 880, height: 600)
         .windowResizability(.contentMinSize)
-        .commands {
-            CommandGroup(replacing: .appInfo) {
-                Button("About Plugd") { Self.showAbout() }
-                Button("Check for Updates…") { Updater.shared.checkNow() }
-            }
-            CommandGroup(replacing: .appSettings) {
-                SettingsButton()
-            }
-            CommandGroup(replacing: .help) {
-                Link("Plugd on GitHub", destination: URL(string: "https://github.com/lncch/Plugd")!)
-                Link("Like Plugd? Star It on GitHub", destination: URL(string: "https://github.com/lncch/Plugd")!)
-                Button("Report a Problem…") { engine.saveReport() }
-                Divider()
-                Link("FORScan Website", destination: URL(string: "https://forscan.org")!)
-            }
-        }
+        .commands { PlugdCommands(engine: engine) }
         MenuBarExtra(isInserted: $showMenuBar) {
             MenuBarMenu().environmentObject(engine)
         } label: {
             Image(nsImage: MenuBarMenu.icon)
+        }
+    }
+}
+
+/// macOS 12: one window and no menu bar item, so closing the window quits (Settings.showMenuBar is off).
+struct PlugdLegacyApp: App {
+    @NSApplicationDelegateAdaptor private var delegate: AppDelegate
+    @StateObject private var engine = Engine()
+
+    var body: some Scene {
+        WindowGroup("Plugd") {
+            ContentView()
+                .environmentObject(engine)
+        }
+        .commands {
+            CommandGroup(replacing: .newItem) {}   // no File > New Window, one window only
+            PlugdCommands(engine: engine)
+        }
+    }
+}
+
+/// The menus both versions share.
+struct PlugdCommands: Commands {
+    let engine: Engine
+
+    var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            Button("About Plugd") { Self.showAbout() }
+            Button("Check for Updates…") { Updater.shared.checkNow() }
+        }
+        CommandGroup(replacing: .appSettings) {
+            SettingsButton()
+        }
+        CommandGroup(replacing: .help) {
+            Link("Plugd on GitHub", destination: URL(string: "https://github.com/lncch/Plugd")!)
+            Link("Like Plugd? Star It on GitHub", destination: URL(string: "https://github.com/lncch/Plugd")!)
+            Button("Report a Problem…") { engine.saveReport() }
+            Divider()
+            Link("FORScan Website", destination: URL(string: "https://forscan.org")!)
         }
     }
 
@@ -162,11 +201,24 @@ extension Notification.Name {
 
 /// Plugd → Settings… (⌘,) opens the window on the Settings page.
 struct SettingsButton: View {
-    @Environment(\.openWindow) private var openWindow
-
     var body: some View {
+        if #available(macOS 13, *), OS.modern {
+            Reopening()
+        } else {
+            // macOS 12: the window is always there, since closing it quits Plugd.
+            Self.button { NSApp.windows.first { $0.frame.width > 300 }?.makeKeyAndOrderFront(nil) }
+        }
+    }
+
+    @available(macOS 13, *)
+    private struct Reopening: View {
+        @Environment(\.openWindow) private var openWindow
+        var body: some View { SettingsButton.button { openWindow(id: "main") } }
+    }
+
+    static func button(showWindow: @escaping () -> Void) -> some View {
         Button("Settings…") {
-            openWindow(id: "main")
+            showWindow()
             NSApp.activate(ignoringOtherApps: true)
             NotificationCenter.default.post(name: .showSettings, object: nil)
         }
@@ -226,16 +278,16 @@ struct ContentView: View {
         }
         .frame(minWidth: 780, minHeight: 540)
         .onReceive(NotificationCenter.default.publisher(for: .showSettings)) { _ in page = .settings }
-        .onChange(of: page) { if page != .dashboard { Task { await engine.stopLive() } } }
+        .onChange(of: page) { new in if new != .dashboard { Task { await engine.stopLive() } } }
         .toolbar {
             ToolbarItem(placement: .primaryAction) { helpMenu }
         }
         // Files can be dropped anywhere on the window once FORScan is set up.
-        .dropDestination(for: URL.self) { urls, _ in
+        .onDrop(of: [.fileURL], isTargeted: Binding(get: { dropTargeted }, set: { dropTargeted = $0 && engine.ready })) { providers in
             guard engine.ready else { return false }
-            engine.addFiles(urls)
+            Self.fileURLs(providers) { engine.addFiles($0) }
             return true
-        } isTargeted: { dropTargeted = $0 && engine.ready }
+        }
         .overlay {
             if dropTargeted {
                 RoundedRectangle(cornerRadius: 12)
@@ -253,42 +305,36 @@ struct ContentView: View {
         }
     }
 
-    private var main: some View {
-        NavigationSplitView {
-            List(Page.allCases, selection: $page) { p in
-                Label(p.title, systemImage: p.icon).tag(p)
-            }
-            .navigationSplitViewColumnWidth(200)
-            .safeAreaInset(edge: .bottom) {
-                Button("Plugd \(Updater.current) · What's New") { showWhatsNew = true }
-                    .buttonStyle(.plain)
-                    .font(.caption).foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .disabled(Updater.currentNotes.isEmpty)
-            }
-        } detail: {
-            let current = page ?? .home
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(current.title).font(.largeTitle.weight(.bold))
-                        Text(current.subtitle).foregroundStyle(.secondary)
-                    }
-                    switch current {
-                    case .home: HomePage(page: $page)
-                    case .dashboard: DashboardPage()
-                    case .codes: CodesCard()
-                    case .files: FilesCard()
-                    case .guide: GuidePage()
-                    case .settings: SettingsPage()
-                    }
+    /// The dropped files, all at once, on the main thread.
+    static func fileURLs(_ providers: [NSItemProvider], then done: @escaping ([URL]) -> Void) {
+        var urls: [URL] = []
+        let group = DispatchGroup()
+        for p in providers {
+            group.enter()
+            _ = p.loadObject(ofClass: URL.self) { url, _ in
+                DispatchQueue.main.async {
+                    if let url { urls.append(url) }
+                    group.leave()
                 }
-                .padding(32)
-                .frame(maxWidth: 640, alignment: .leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .navigationTitle(current.title)
+        }
+        group.notify(queue: .main) { if !urls.isEmpty { done(urls) } }
+    }
+
+    private var main: some View {
+        Group {
+            if #available(macOS 13, *), OS.modern {
+                NavigationSplitView {
+                    sidebar.navigationSplitViewColumnWidth(200)
+                } detail: {
+                    detail
+                }
+            } else {
+                NavigationView {
+                    sidebar.listStyle(.sidebar).frame(minWidth: 200)
+                    detail
+                }
+            }
         }
         .onAppear {
             if whatsNewSeen != Updater.current { showWhatsNew = !Updater.currentNotes.isEmpty }
@@ -296,6 +342,44 @@ struct ContentView: View {
         .sheet(isPresented: $showWhatsNew, onDismiss: { whatsNewSeen = Updater.current }) {
             WhatsNewSheet(notes: Updater.currentNotes) { showWhatsNew = false }
         }
+    }
+
+    private var sidebar: some View {
+        List(Page.allCases, selection: $page) { p in
+            Label(p.title, systemImage: p.icon).tag(p)
+        }
+        .safeAreaInset(edge: .bottom) {
+            Button("Plugd \(Updater.current) · What's New") { showWhatsNew = true }
+                .buttonStyle(.plain)
+                .font(.caption).foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .disabled(Updater.currentNotes.isEmpty)
+        }
+    }
+
+    private var detail: some View {
+        let current = page ?? .home
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(current.title).font(.largeTitle.weight(.bold))
+                    Text(current.subtitle).foregroundStyle(.secondary)
+                }
+                switch current {
+                case .home: HomePage(page: $page)
+                case .dashboard: DashboardPage()
+                case .codes: CodesCard()
+                case .files: FilesCard()
+                case .guide: GuidePage()
+                case .settings: SettingsPage()
+                }
+            }
+            .padding(32)
+            .frame(maxWidth: 640, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .navigationTitle(current.title)
     }
 
     private var helpMenu: some View {
@@ -307,7 +391,7 @@ struct ContentView: View {
             Button("Report a Problem…") { engine.saveReport() }
             Link("Plugd on GitHub", destination: Links.github)
             Link("Like Plugd? Star It on GitHub", destination: Links.github)
-            Button("About Plugd") { PlugdApp.showAbout() }
+            Button("About Plugd") { PlugdCommands.showAbout() }
         } label: {
             Label("Help", systemImage: "questionmark.circle")
         }
@@ -766,7 +850,7 @@ struct CodesCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Label("Engine codes", systemImage: "engine.combustion").fontWeight(.medium)
+                Label("Engine codes", systemImage: "engine.combustion").font(.body.weight(.medium))
                 if let summary {
                     Text(summary).font(.caption).foregroundStyle(.secondary)
                 }
@@ -833,7 +917,7 @@ struct FilesCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Label("Files for FORScan", systemImage: "folder").fontWeight(.medium)
+                Label("Files for FORScan", systemImage: "folder").font(.body.weight(.medium))
                 Spacer()
                 Text("\(engine.files.count) \(engine.files.count == 1 ? "file" : "files") · \(engine.backups.count) \(engine.backups.count == 1 ? "backup" : "backups")")
                     .font(.caption.monospacedDigit()).foregroundStyle(.secondary)

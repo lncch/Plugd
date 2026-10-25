@@ -22,7 +22,7 @@ cat > "$OUT" <<EOF
 <pubDate>$(LC_ALL=C date -u "+%a, %d %b %Y %H:%M:%S +0000")</pubDate>
 <sparkle:version>$BUILD</sparkle:version>
 <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
-<sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+<sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
 <sparkle:fullReleaseNotesLink>https://github.com/lncch/Plugd/releases/tag/v$VERSION</sparkle:fullReleaseNotesLink>
 <description><![CDATA[<h3>What's new in Plugd $VERSION</h3><ul>$NOTES</ul>]]></description>
 <enclosure url="$URL" $ENCLOSURE type="application/octet-stream"/>

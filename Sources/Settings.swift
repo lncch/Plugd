@@ -5,7 +5,7 @@ import SwiftUI
 enum Settings {
     /// A setting that was never changed reads as on (the default for all of these).
     static func on(_ key: String) -> Bool { UserDefaults.standard.object(forKey: key) == nil || UserDefaults.standard.bool(forKey: key) }
-    static var showMenuBar: Bool { on("showMenuBar") }
+    static var showMenuBar: Bool { OS.modern && on("showMenuBar") }   // macOS 12 has no menu bar item
     static var showDock: Bool { on("showDock") || !showMenuBar }   // never hide both, or Plugd can't be reached
     static var checkUpdates: Bool { on("checkUpdates") }
     /// A /dev name like "cu.OBDLinkMXPlus"; empty means find the adapter automatically.
@@ -13,6 +13,12 @@ enum Settings {
 
     static func applyDock() {
         NSApp.setActivationPolicy(showDock ? .regular : .accessory)
+    }
+
+    /// Open at login needs SMAppService (macOS 13).
+    static var openAtLogin: Bool {
+        guard #available(macOS 13, *) else { return false }
+        return SMAppService.mainApp.status == .enabled
     }
 }
 
@@ -22,23 +28,26 @@ struct SettingsPage: View {
     @AppStorage("checkUpdates") private var checkUpdates = true
     @AppStorage("seenWelcome") private var seenWelcome = false
     @AppStorage("adapterPort") private var adapterPort = ""
-    @State private var openAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var openAtLogin = Settings.openAtLogin
     @State private var loginError: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            row("Open at login", "Plugd starts in the menu bar when you log in, without opening its window.", isOn: Binding(
-                get: { openAtLogin },
-                set: { setOpenAtLogin($0) }))
-            if let loginError {
-                Text(loginError).font(.caption).foregroundStyle(.orange).padding(.bottom, 10)
+            // The menu bar item and Open at login need macOS 13.
+            if OS.modern {
+                row("Open at login", "Plugd starts in the menu bar when you log in, without opening its window.", isOn: Binding(
+                    get: { openAtLogin },
+                    set: { setOpenAtLogin($0) }))
+                if let loginError {
+                    Text(loginError).font(.caption).foregroundStyle(.orange).padding(.bottom, 10)
+                }
+                Divider()
+                row("Show in menu bar", "Adapter status, Open FORScan and engine codes from the menu bar. Closing the window keeps Plugd running there.", isOn: $showMenuBar)
+                Divider()
+                row("Show in Dock", showMenuBar ? "Turn off to keep Plugd only in the menu bar." : "Needed while the menu bar icon is off, so you can reach Plugd.", isOn: $showDock)
+                    .disabled(!showMenuBar)
+                Divider()
             }
-            Divider()
-            row("Show in menu bar", "Adapter status, Open FORScan and engine codes from the menu bar. Closing the window keeps Plugd running there.", isOn: $showMenuBar)
-            Divider()
-            row("Show in Dock", showMenuBar ? "Turn off to keep Plugd only in the menu bar." : "Needed while the menu bar icon is off, so you can reach Plugd.", isOn: $showDock)
-                .disabled(!showMenuBar)
-            Divider()
             row("Check for updates", "When Plugd starts, it looks at forscan.org and GitHub and tells you when a new FORScan or Plugd is out.", isOn: $checkUpdates)
             Divider()
             row("Adapter", "Automatic finds USB adapters, and paired Bluetooth ones with OBD in the name. Pick yours if Plugd misses it.") {
@@ -52,12 +61,12 @@ struct SettingsPage: View {
         }
         .padding(.horizontal, 16)
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
-        .onChange(of: showMenuBar) {
-            if !showMenuBar { showDock = true }
+        .onChange(of: showMenuBar) { on in
+            if !on { showDock = true }
             Settings.applyDock()
         }
-        .onChange(of: checkUpdates) { Updater.shared.setAutomatic(checkUpdates) }
-        .onChange(of: showDock) {
+        .onChange(of: checkUpdates) { on in Updater.shared.setAutomatic(on) }
+        .onChange(of: showDock) { _ in
             Settings.applyDock()
             // Leaving the Dock moves the window behind other apps; bring it back.
             NSApp.activate(ignoringOtherApps: true)
@@ -89,12 +98,13 @@ struct SettingsPage: View {
     }
 
     private func setOpenAtLogin(_ on: Bool) {
+        guard #available(macOS 13, *) else { return }
         do {
             if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
             loginError = nil
         } catch {
             loginError = "macOS said no: \(error.localizedDescription). Move Plugd to Applications and try again."
         }
-        openAtLogin = SMAppService.mainApp.status == .enabled
+        openAtLogin = Settings.openAtLogin
     }
 }

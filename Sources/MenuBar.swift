@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// The menu bar menu: adapter status and the main actions, without opening the window.
+@available(macOS 13, *)
 struct MenuBarMenu: View {
     @EnvironmentObject var engine: Engine
     @ObservedObject private var updater = Updater.shared
