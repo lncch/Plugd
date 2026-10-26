@@ -13,7 +13,7 @@
 <meta property="og:image" content="https://plugd.almoayyad.dev/img/main.png?v=0.3.2">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Plugd","description":"Runs FORScan, the Ford diagnostic tool, on a Mac with Wine. Free and open source.","url":"https://plugd.almoayyad.dev/","downloadUrl":"https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg","applicationCategory":"UtilitiesApplication","operatingSystem":"macOS 12 or later","softwareVersion":"0.3.6","license":"https://opensource.org/licenses/MIT","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Almoayyad Abuljdail","url":"https://almoayyad.dev"}}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Plugd","description":"Runs FORScan, the Ford diagnostic tool, on a Mac with Wine. Free and open source.","url":"https://plugd.almoayyad.dev/","downloadUrl":"https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg","applicationCategory":"UtilitiesApplication","operatingSystem":"macOS 12 or later","softwareVersion":"0.3.7","license":"https://opensource.org/licenses/MIT","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Almoayyad Abuljdail","url":"https://almoayyad.dev"}}
 </script>
 <link rel="icon" href="img/icon.png?v=0.3.2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -114,8 +114,8 @@ footer p + p { margin-top: 8px; }
       <a class="btn primary" href="https://github.com/lncch/Plugd/releases/latest/download/Plugd.dmg">Download for Mac</a>
       <a class="btn" href="https://github.com/lncch/Plugd">★ Star on GitHub</a>
     </div>
-    <p class="req">One download for Apple Silicon and Intel · macOS 12 or later · USB or Bluetooth OBD adapter · v0.3.6</p>
-    <p class="req"><b>New in 0.3.6:</b> runs on macOS 12 Monterey, so 2015 to 2017 Macs work too. On 0.3.4 or older? Download it once more and you're set.</p>
+    <p class="req">One download for Apple Silicon and Intel · macOS 12 or later · USB or Bluetooth OBD adapter · v0.3.7</p>
+    <p class="req"><b>New in 0.3.7:</b> your Mac stays awake while FORScan is open, Plugd warns you about a low car battery, and the Dashboard can record to a CSV file. On 0.3.4 or older? Download it once more and you're set.</p>
     <p class="req">Like it? A star on GitHub helps other Ford owners find it.</p>
   </header>
 
@@ -136,10 +136,10 @@ footer p + p { margin-top: 8px; }
     </div>
     <div class="steps" style="grid-template-columns:1fr 1fr">
       <div class="step"><h3>Files on drive O:</h3><p>Drag license keys, As-Built backups or profiles into Plugd. FORScan sees them on drive O:. Anything FORScan saves to O: lands in Documents/Plugd on your Mac.</p></div>
-      <div class="step"><h3>Quick engine check</h3><p>Read the engine's error codes and the battery voltage in a few seconds, without opening FORScan.</p></div>
-      <div class="step"><h3>Backups in sight</h3><p>Lists your As-Built backups by date, and warns you when there are none before you change a setting.</p></div>
+      <div class="step"><h3>Quick engine check</h3><p>Read the engine's error codes and the battery voltage in a few seconds, without opening FORScan. For each stored code, see what the engine was doing when it was set.</p></div>
+      <div class="step"><h3>Backups in sight</h3><p>Lists your As-Built backups by date and the car each one came from, and warns you when there are none before you change a setting.</p></div>
       <div class="step"><h3>Stays current</h3><p>Shows when your FORScan Extended license runs out, and updates FORScan from forscan.org in one click.</p></div>
-      <div class="step"><h3>Live dashboard</h3><p>RPM, speed, coolant, battery, fuel level and more, about once a second. Only the readings your car supports show up.</p></div>
+      <div class="step"><h3>Live dashboard</h3><p>RPM, speed, coolant, battery, fuel level and more, about once a second. Only the readings your car supports show up. Record a drive to a CSV file for Numbers or Excel.</p></div>
       <div class="step"><h3>In the menu bar</h3><p>Adapter status, Open FORScan and engine codes from the menu bar. Can start at login and hide from the Dock. Needs macOS 13 or later.</p></div>
     </div>
     <div class="diagram"><pre><b>FORScan.exe</b> ──▶ Wine (COM1) ──▶ <b>/dev/cu.usbserial</b> ──▶ OBD adapter ──▶ car (HS-CAN / MS-CAN)
