@@ -21,9 +21,11 @@ If you like it, give it a ⭐. It helps other Ford owners find it.
 - Installs Wine and downloads FORScan from forscan.org (it doesn't ship FORScan itself)
 - Finds your USB OBD adapter, or a paired Bluetooth one, and connects FORScan to it
 - Gives FORScan a folder on your Mac (it shows up as drive O:) for license keys and As-Built backups
-- Warns you when you don't have a backup yet
-- Reads engine codes and battery voltage without opening FORScan
-- Shows a live dashboard (RPM, speed, temperatures, fuel and more) while FORScan is closed
+- Warns you when you don't have a backup yet, and labels each backup with the car it came from
+- Keeps your Mac awake while FORScan is open, and warns you when the car battery is low
+- Reads engine codes, with what the engine was doing when each was set, without opening FORScan
+- Shows a live dashboard (RPM, speed, temperatures, fuel and more) while FORScan is closed, and records it to a CSV file
+- Removes Wine and FORScan for you before you delete Plugd
 - Lives in the menu bar if you want, and can start at login (macOS 13 or later)
 - Tells you when a new FORScan version is out, and when your license runs out
 

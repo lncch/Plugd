@@ -7,6 +7,10 @@ Keep each line plain text, one change per "- " line.
 - Your Mac no longer goes to sleep while FORScan is open, so a long write doesn't get cut off. Closing a MacBook's lid still sleeps it.
 - Plugd warns you when the car battery is under 12.4 V, so you put a charger on before changing settings.
 - Fixed "Adapter changed" showing when no adapter was plugged in.
+- Record the Dashboard to a CSV file you can open in Numbers or Excel.
+- Engine codes now show what the engine was doing when a code was set (freeze frame).
+- Backups you save in FORScan show which car they came from.
+- Settings > Remove Wine and FORScan frees about 1 GB before you delete Plugd.
 
 ## 0.3.6
 - Plugd now runs on macOS 12 Monterey, so older Macs like a 2015 MacBook Air work too. On macOS 12 there's no menu bar icon or Open at login.

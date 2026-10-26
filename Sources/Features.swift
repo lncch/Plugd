@@ -19,6 +19,7 @@ extension Engine {
             adapter = nil
             codes = nil
             codesCheckedAt = nil
+            freeze = nil
             chip = port.map(Self.isUSB) == true ? Self.usbChip() : nil
             if port != nil { Task { await probeAdapter() } }
         }
@@ -45,8 +46,10 @@ extension Engine {
         serialBusy = true
         defer { serialBusy = false }
         codes = .checking
-        let result = await Task.detached { ELM.readCodes(port) }.value
+        freeze = nil
+        let (result, frame) = await Task.detached { ELM.readCodes(port) }.value
         codes = result
+        freeze = frame
         codesCheckedAt = Date()
         switch result {
         case .ok(let s, let p): say("Engine codes: \(s.isEmpty ? "none stored" : s.joined(separator: ", "))\(p.isEmpty ? "" : ", pending \(p.joined(separator: ", "))")")
@@ -165,6 +168,43 @@ extension Engine {
     var backups: [URL] { files.filter(Self.isBackup) }
 
     nonisolated static func isBackup(_ url: URL) -> Bool { ["abt", "ab"].contains(url.pathExtension.lowercased()) }
+
+    /// "Ford Mondeo · VIN …74878" from the last car in FORScan's log. FORScan logs it on connect as
+    /// "[Ford Vehicle] Ford Mondeo EVOS … ( 2021 MY ), VIN: LVS*********74878", with the VIN already masked.
+    nonisolated static func carLabel(log: String) -> String? {
+        for line in log.split(whereSeparator: \.isNewline).reversed() {
+            guard let v = line.range(of: " Vehicle] "), let vin = line.range(of: ", VIN: ", options: .backwards),
+                  v.upperBound <= vin.lowerBound else { continue }
+            let model = line[v.upperBound..<vin.lowerBound].split(separator: " ").prefix(2).joined(separator: " ")
+            let tail = line[vin.upperBound...].trimmingCharacters(in: .whitespaces).suffix(5)
+            if !model.isEmpty, tail.count == 5 { return "\(model) · VIN …\(tail)" }
+        }
+        return nil
+    }
+
+    // MARK: - Remove
+
+    /// Moves Wine, FORScan and FORScan's settings to the Trash, where they can be put back. Files and backups stay.
+    func removeSetup() async {
+        await stopLive()
+        _ = await wineRun("wineserver", ["-k"])   // nothing may run from the folder while it moves
+        let fm = FileManager.default
+        // In tests (PLUGD_HOME) the files folder is inside base: keep it and move the rest.
+        let inside = filesDir.path.hasPrefix(base.path + "/")
+        let targets = inside ? ((try? fm.contentsOfDirectory(at: base, includingPropertiesForKeys: nil)) ?? []).filter { $0.lastPathComponent != filesDir.lastPathComponent }
+                             : [base].filter { fm.fileExists(atPath: $0.path) }
+        do {
+            for url in targets { try fm.trashItem(at: url, resultingItemURL: nil) }
+            say("Moved Wine and FORScan to the Trash")
+        } catch {
+            notice = "Could not move Wine and FORScan to the Trash: \(error.localizedDescription)"
+        }
+        mappedPort = nil
+        license = nil
+        installedVersion = nil
+        refreshSteps()
+        poll()
+    }
 
     // MARK: - Problem report
 

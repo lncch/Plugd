@@ -23,6 +23,7 @@ extension Engine {
                         got = true
                         await MainActor.run { self.live[pid.id] = v }
                     }
+                    if got { await MainActor.run { self.recordRow() } }
                     // Unplugged or ignition off: stop instead of spinning.
                     misses = got ? 0 : misses + 1
                     if misses >= 3 { return "The car stopped answering." }
@@ -33,6 +34,7 @@ extension Engine {
             liveError = error
             liveTask = nil
             serialBusy = false
+            stopRecording()   // Stop, an error or opening FORScan all save what was recorded
             if let error { say("Dashboard: \(error)") }
         }
     }
@@ -41,6 +43,47 @@ extension Engine {
         guard let task = liveTask else { return }
         task.cancel()
         await task.value
+    }
+
+    // MARK: - Recording
+
+    func startRecording() {
+        recordRows = []
+        recordingSince = Date()
+    }
+
+    /// One CSV row after each pass over the readings.
+    func recordRow() {
+        guard let since = recordingSince, let ids = liveSupported else { return }
+        recordRows.append(Self.csvRow(Date().timeIntervalSince(since), ids.map { live[$0] }))
+    }
+
+    /// Saves the recording into the files folder and shows it in Finder.
+    func stopRecording() {
+        guard let since = recordingSince else { return }
+        recordingSince = nil
+        guard let ids = liveSupported, !recordRows.isEmpty else { return }
+        let url = filesDir.appendingPathComponent("Dashboard \(Self.isoFormatter("yyyy-MM-dd HH.mm").string(from: since)).csv")
+        do {
+            try FileManager.default.createDirectory(at: filesDir, withIntermediateDirectories: true)
+            try Self.csv(ids, recordRows).write(to: url, atomically: true, encoding: .utf8)
+            say("Saved \(recordRows.count) readings to \(url.lastPathComponent)")
+            refreshFiles()
+            reveal(url)
+        } catch {
+            notice = "Could not save the recording: \(error.localizedDescription)"
+        }
+        recordRows = []
+    }
+
+    /// A byte order mark first, so Excel reads °C right.
+    nonisolated static func csv(_ ids: [UInt8], _ rows: [String]) -> String {
+        let names = ids.compactMap { id in ELM.pids.first { $0.id == id }.map { "\($0.name) (\($0.unit))" } }
+        return "\u{FEFF}" + ([(["Seconds"] + names).joined(separator: ",")] + rows).joined(separator: "\n") + "\n"
+    }
+
+    nonisolated static func csvRow(_ seconds: Double, _ values: [Double?]) -> String {
+        ([String(format: "%.1f", seconds)] + values.map { $0.map { String(format: "%.1f", $0) } ?? "" }).joined(separator: ",")
     }
 }
 
@@ -59,6 +102,14 @@ struct DashboardPage: View {
                 } else {
                     Circle().fill(.green).frame(width: 8, height: 8)
                     Text("Live").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    if let since = engine.recordingSince {
+                        Text(since, style: .timer).font(.caption.monospacedDigit()).foregroundStyle(.red)
+                        Button { engine.stopRecording() } label: { Label("Stop Recording", systemImage: "stop.circle") }
+                    } else {
+                        Button { engine.startRecording() } label: { Label("Record", systemImage: "record.circle") }
+                            .help("Saves every reading to a CSV file you can open in Numbers or Excel.")
+                    }
                 }
             } else {
                 Button { stopped = false; engine.startLive() } label: { Label("Start", systemImage: "play.fill") }
@@ -98,7 +149,7 @@ private struct Gauge: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(pid.name).font(.caption).foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value.map(format) ?? "–").font(.system(size: 28, weight: .semibold, design: .rounded).monospacedDigit())
+                Text(value.map(pid.format) ?? "–").font(.system(size: 28, weight: .semibold, design: .rounded).monospacedDigit())
                     .numberTransition()
                 Text(pid.unit).font(.callout).foregroundStyle(.secondary)
             }
@@ -108,9 +159,11 @@ private struct Gauge: View {
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
         .accessibilityElement(children: .combine)
     }
+}
 
-    private func format(_ v: Double) -> String {
-        pid.unit == "V" ? String(format: "%.1f", v) : String(format: "%.0f", v)
+extension ELM.PID {
+    func format(_ v: Double) -> String {
+        unit == "V" ? String(format: "%.1f", v) : String(format: "%.0f", v)
     }
 }
 

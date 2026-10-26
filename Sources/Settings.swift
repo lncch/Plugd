@@ -23,6 +23,8 @@ enum Settings {
 }
 
 struct SettingsPage: View {
+    @EnvironmentObject var engine: Engine
+    @State private var confirmRemove = false
     @AppStorage("showMenuBar") private var showMenuBar = true
     @AppStorage("showDock") private var showDock = true
     @AppStorage("checkUpdates") private var checkUpdates = true
@@ -58,8 +60,19 @@ struct SettingsPage: View {
                 .labelsHidden()
                 .fixedSize()
             }
+            Divider()
+            row("Remove Wine and FORScan", "Frees about 1 GB. Do this before you delete Plugd. Your files and backups in Documents/Plugd stay.") {
+                Button("Remove…") { confirmRemove = true }
+                    .disabled(engine.busy || engine.serialBusy || (engine.wine == .waiting && engine.forscan == .waiting))
+            }
         }
         .padding(.horizontal, 16)
+        .alert("Move Wine and FORScan to the Trash?", isPresented: $confirmRemove) {
+            Button("Move to Trash", role: .destructive) { Task { await engine.removeSetup() } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("FORScan's license, settings and saved car profiles go with it. Setting up again can need a new license key from forscan.org. To undo, put the Plugd folder back from the Trash.")
+        }
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
         .onChange(of: showMenuBar) { on in
             if !on { showDock = true }

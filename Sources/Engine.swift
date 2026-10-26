@@ -47,6 +47,15 @@ final class Engine: ObservableObject {
     @Published var portHeld = false
     @Published var codes: ELM.Codes?
     @Published var codesCheckedAt: Date?
+    @Published var freeze: ELM.Freeze?
+    /// Dashboard recording: CSV rows since the start time.
+    @Published var recordingSince: Date?
+    var recordRows: [String] = []
+    /// Backup file name → the car FORScan was connected to when it was saved, e.g. "Ford Mondeo · VIN …74878".
+    @Published var backupCars = UserDefaults.standard.dictionary(forKey: "backupCars") as? [String: String] ?? [:] {
+        didSet { UserDefaults.standard.set(backupCars, forKey: "backupCars") }
+    }
+    private var filesLoaded = false
     /// Dashboard: latest value per mode-01 PID, the PIDs the car supports, and the reading loop.
     @Published var live: [UInt8: Double] = [:]
     @Published var liveSupported: [UInt8]?
@@ -176,6 +185,13 @@ final class Engine: ObservableObject {
                                                                  options: [.skipsHiddenFiles])) ?? []
         let date = { (u: URL) in (try? u.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast }
         let sorted = all.sorted { date($0) > date($1) }
+        // A backup that shows up while FORScan is open was just saved from the car FORScan is connected to.
+        let new = sorted.filter { Self.isBackup($0) && !files.contains($0) }
+        if filesLoaded, running, !new.isEmpty, let log = forscanLog().flatMap({ try? Data(contentsOf: $0) }),
+           let car = Self.carLabel(log: String(decoding: log, as: UTF8.self)) {
+            for url in new { backupCars[url.lastPathComponent] = car }
+        }
+        filesLoaded = true
         if sorted != files { files = sorted }
     }
 

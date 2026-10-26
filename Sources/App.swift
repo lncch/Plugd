@@ -38,6 +38,12 @@ enum Launcher {
             var fails = DTC.selfTest() + Engine.redactSelfTest() + ELM.liveSelfTest() + Engine.portSelfTest() + Updater.notesSelfTest()
             if Engine.setupVersion("FORScanSetup2.3.71.release.exe") != "2.3.71" { fails.append("setupVersion") }
             if !Engine.older("2.3.9", "2.3.71") || Engine.older("2.3.71", "2.3.71") { fails.append("older") }
+            let log = "2026-10-22 12:40:00.000 [Ford Vehicle] Ford Focus 1.0L 2018 ( 2018 MY ), VIN: 1FA*********11111\r\n"
+                + "2026-10-22 12:42:20.677 [Ford Vehicle] Ford Mondeo EVOS EcoBoost 2.0L 2023 ( 2021 MY ), VIN: LVS*********74878\r\n"
+                + "2026-10-22 12:42:21.000 [GUI Main Window] Connected\r\n"
+            if Engine.carLabel(log: log) != "Ford Mondeo · VIN …74878" { fails.append("carLabel \(Engine.carLabel(log: log) ?? "nil")") }
+            if Engine.carLabel(log: "no car here\n") != nil { fails.append("carLabel without a car") }
+            if Engine.csv([0x0C, 0x05], [Engine.csvRow(1.5, [1726, nil])]) != "\u{FEFF}Seconds,Engine speed (rpm),Coolant (°C)\n1.5,1726.0,\n" { fails.append("csv") }
             let low = { (v: String?) in ELM.Info(version: "", volts: v).lowBattery }
             if !low("12.1 V") || !low("11.9 V") || low("12.4 V") || low("14.2 V") || low(nil) || low("? V") { fails.append("lowBattery") }            // A child that leaves a background process holding the pipe must not hang shell() (Wine installer on Intel).
             let start = Date()
@@ -267,7 +273,14 @@ struct ContentView: View {
     var body: some View {
         Group {
             if page == .settings && !engine.ready {
-                ScrollView { SettingsPage().frame(maxWidth: 560).padding(40) }.frame(maxWidth: .infinity)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        SettingsPage()
+                        Button("Done") { page = .home }.keyboardShortcut(.defaultAction)
+                    }
+                    .frame(maxWidth: 560).padding(40)
+                }
+                .frame(maxWidth: .infinity)
             } else if !seenWelcome {
                 // Someone who just installed doesn't need What's New on top of the welcome.
                 WelcomeView { seenWelcome = true; whatsNewSeen = Updater.current }
@@ -880,6 +893,7 @@ struct CodesCard: View {
                     ForEach(stored, id: \.self) { row($0, "Stored") }
                     ForEach(pending.filter { !stored.contains($0) }, id: \.self) { row($0, "Pending") }
                 }
+                if let freeze = engine.freeze { FreezeView(freeze: freeze) }
                 Text("Other modules (ABS, body, steering) need FORScan.").font(.caption2).foregroundStyle(.secondary)
             default:
                 EmptyView()
@@ -915,6 +929,29 @@ struct CodesCard: View {
     }
 }
 
+/// The readings the car saved when a stored code was set.
+private struct FreezeView: View {
+    let freeze: ELM.Freeze
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("What the engine was doing when \(freeze.code) was set").font(.caption.weight(.medium))
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 170), alignment: .leading)], alignment: .leading, spacing: 4) {
+                ForEach(ELM.pids.filter { freeze.values[$0.id] != nil }, id: \.id) { pid in
+                    HStack(spacing: 4) {
+                        Text(pid.name).foregroundStyle(.secondary)
+                        Text("\(pid.format(freeze.values[pid.id] ?? 0)) \(pid.unit)").monospacedDigit()
+                    }
+                    .font(.caption)
+                }
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
 /// The folder FORScan sees as drive O:: license keys, profiles and As-Built backups in one place.
 struct FilesCard: View {
     @EnvironmentObject var engine: Engine
@@ -940,6 +977,9 @@ struct FilesCard: View {
                                 if Engine.isBackup(url) {
                                     Text("Backup").font(.caption2).padding(.horizontal, 6).padding(.vertical, 1)
                                         .background(Color.green.opacity(0.18), in: Capsule())
+                                }
+                                if let car = engine.backupCars[url.lastPathComponent] {
+                                    Text(car).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                                 }
                                 Spacer()
                                 Text(modified(url)).font(.caption).foregroundStyle(.secondary)

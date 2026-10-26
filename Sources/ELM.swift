@@ -16,6 +16,12 @@ struct ELM {
         case failed(String)
     }
 
+    /// What the engine was doing when a stored code was set (mode 02, frame 0), by mode-01 PID.
+    struct Freeze: Sendable, Equatable {
+        var code: String
+        var values: [UInt8: Double]
+    }
+
     let fd: Int32
 
     /// Opens the port and resets the adapter. Cheap ELM327 clones run at 38400, some at 115200.
@@ -69,13 +75,14 @@ struct ELM {
     }
 
     /// Reads stored (mode 03) and pending (mode 07) OBD-II codes. Only emission-related modules answer these.
-    static func readCodes(_ path: String) -> Codes {
-        guard let e = open(path) else { return .failed("The adapter did not answer. Unplug it and plug it back in.") }
+    /// With a stored code, also reads its freeze frame.
+    static func readCodes(_ path: String) -> (codes: Codes, freeze: Freeze?) {
+        guard let e = open(path) else { return (.failed("The adapter did not answer. Unplug it and plug it back in."), nil) }
         defer { e.close() }
         _ = e.send("ATSP0")
         // The first request makes the adapter search for the car's protocol; that can take 10 s.
         guard e.send("0100", timeout: 15).contains("41 00") else {
-            return .failed("No answer from the car. Turn the ignition on and set the adapter switch to HS.")
+            return (.failed("No answer from the car. Turn the ignition on and set the adapter switch to HS."), nil)
         }
         let proto = e.send("ATDPN").elmLines.first ?? ""
         let can = "6789".contains(proto.last ?? "0")
@@ -83,7 +90,19 @@ struct ELM {
         let stored = DTC.parse(e.send("03", timeout: 5), mode: 0x43, can: can)
         let pending = DTC.parse(e.send("07", timeout: 5), mode: 0x47, can: can)
         _ = e.send("ATH0")
-        return .ok(stored: stored, pending: pending)
+        return (.ok(stored: stored, pending: pending), stored.isEmpty ? nil : e.freezeFrame())
+    }
+
+    /// Asks for each Dashboard reading in freeze frame 0; unsupported ones answer NO DATA. Headers must be off.
+    func freezeFrame() -> Freeze? {
+        guard let dtc = Self.data(send("020200"), after: [0x42, 0x02, 0x00]), dtc.count >= 2, dtc[0] | dtc[1] != 0 else { return nil }
+        var values: [UInt8: Double] = [:]
+        for pid in Self.pids {
+            if let b = Self.data(send(String(format: "02%02X00", pid.id)), after: [0x42, pid.id, 0x00]), b.count >= pid.bytes {
+                values[pid.id] = pid.value(b.map(Double.init))
+            }
+        }
+        return values.isEmpty ? nil : Freeze(code: DTC.name(dtc[0], dtc[1]), values: values)
     }
 }
 
@@ -198,10 +217,13 @@ extension ELM {
     ]
 
     /// The data bytes of a "41 <pid> …" reply, or nil. The first module that answers wins.
-    static func mode01Data(_ text: String, pid: UInt8) -> [UInt8]? {
+    static func mode01Data(_ text: String, pid: UInt8) -> [UInt8]? { data(text, after: [0x41, pid]) }
+
+    /// The bytes after `prefix` (41 0C for a live reading, 42 0C 00 for freeze frame 0), or nil. The first module that answers wins.
+    static func data(_ text: String, after prefix: [UInt8]) -> [UInt8]? {
         for line in text.elmLines {
             let b = line.split(separator: " ").compactMap { UInt8($0, radix: 16) }
-            if b.count > 2, b[0] == 0x41, b[1] == pid { return Array(b.dropFirst(2)) }
+            if b.count > prefix.count, b.starts(with: prefix) { return Array(b.dropFirst(prefix.count)) }
         }
         return nil
     }
@@ -247,6 +269,9 @@ extension ELM {
         let rpm = pids.first { $0.id == 0x0C }!
         if let b = mode01Data("SEARCHING...\n41 0C 1A F8\n41 0C 00 00", pid: 0x0C), rpm.value(b.map(Double.init)) != 1726 { fails.append("rpm") }
         if mode01Data("NO DATA", pid: 0x0C) != nil { fails.append("NO DATA parsed") }
+        if let b = data("42 0C 00 1A F8", after: [0x42, 0x0C, 0x00]), rpm.value(b.map(Double.init)) != 1726 { fails.append("freeze rpm") }
+        if data("42 0C 00 1A F8", after: [0x42, 0x0C, 0x00]) == nil { fails.append("freeze rpm missing") }
+        if data("42 0C 01 1A F8", after: [0x42, 0x0C, 0x00]) != nil { fails.append("freeze frame 1 read as frame 0") }
         return fails
     }
 }
