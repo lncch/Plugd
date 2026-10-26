@@ -6,6 +6,8 @@ struct ELM {
     struct Info: Sendable, Equatable {
         var version: String
         var volts: String?
+        /// Under 12.4 V, the usual line for "charge the battery before changing settings".
+        var lowBattery: Bool { volts.flatMap { Double($0.dropLast(2)) }.map { $0 < 12.4 } ?? false }
     }
 
     enum Codes: Sendable, Equatable {

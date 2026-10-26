@@ -37,7 +37,9 @@ enum Launcher {
         if CommandLine.arguments.contains("--self-test") {
             var fails = DTC.selfTest() + Engine.redactSelfTest() + ELM.liveSelfTest() + Engine.portSelfTest() + Updater.notesSelfTest()
             if Engine.setupVersion("FORScanSetup2.3.71.release.exe") != "2.3.71" { fails.append("setupVersion") }
-            if !Engine.older("2.3.9", "2.3.71") || Engine.older("2.3.71", "2.3.71") { fails.append("older") }            // A child that leaves a background process holding the pipe must not hang shell() (Wine installer on Intel).
+            if !Engine.older("2.3.9", "2.3.71") || Engine.older("2.3.71", "2.3.71") { fails.append("older") }
+            let low = { (v: String?) in ELM.Info(version: "", volts: v).lowBattery }
+            if !low("12.1 V") || !low("11.9 V") || low("12.4 V") || low("14.2 V") || low(nil) || low("? V") { fails.append("lowBattery") }            // A child that leaves a background process holding the pipe must not hang shell() (Wine installer on Intel).
             let start = Date()
             _ = Engine.shell("/bin/sh", ["-c", "sleep 30 & exit 0"], timeout: 1)
             if Date().timeIntervalSince(start) > 10 { fails.append("shell waited on a leftover process") }
@@ -769,12 +771,15 @@ struct ForscanCard: View {
                         Label("Car battery \(volts)", systemImage: "bolt.fill").font(.caption.monospacedDigit())
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(engine.adapter?.lowBattery == true ? Color.orange : Color.secondary)
                     .disabled(!engine.canUseAdapter)
                     .help("Voltage at the OBD port. Click to read it again.")
                 }
             }
             .accessibilityElement(children: .combine)
+            if engine.adapter?.lowBattery == true {
+                Text("Car battery is low. Put a charger on before you change any settings.").font(.caption).foregroundStyle(.orange)
+            }
             if engine.port == nil {
                 HStack(spacing: 4) {
                     Text("Plug in a USB OBD adapter, or pair a Bluetooth one.").foregroundStyle(.secondary)
@@ -782,7 +787,7 @@ struct ForscanCard: View {
                 }
                 .font(.caption)
             }
-            if engine.running, let mapped = engine.mappedPort, mapped != engine.port {
+            if engine.running, let port = engine.port, let mapped = engine.mappedPort, mapped != port {
                 Text("Adapter changed. Quit and reopen FORScan to use it.").font(.caption).foregroundStyle(.orange)
             }
 
@@ -792,6 +797,7 @@ struct ForscanCard: View {
                 }
                 .controlSize(.large)
                 .disabled(engine.busy)
+                Text("Your Mac stays awake while FORScan is open. Keep the lid open.").font(.caption).foregroundStyle(.secondary)
             } else {
                 Button { Task { await engine.openForscan() } } label: {
                     Label(engine.busy ? "Starting FORScan…" : "Open FORScan", systemImage: "play.fill")

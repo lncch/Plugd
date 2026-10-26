@@ -35,7 +35,7 @@ final class Engine: ObservableObject {
     @Published var forscan: StepState = .waiting
     @Published var busy = false
     @Published var port: String?
-    @Published var running = false
+    @Published var running = false { didSet { keepAwake(running) } }
     @Published var mappedPort: String?
     @Published var eulaText: String?
     @Published var notice: String?
@@ -58,6 +58,7 @@ final class Engine: ObservableObject {
 
     private var eulaAnswer: CheckedContinuation<Bool, Never>?
     private var timer: Timer?
+    private var sleepLock: NSObjectProtocol?
 
     var ready: Bool { rosetta == .done && wine == .done && forscan == .done }
 
@@ -114,6 +115,17 @@ final class Engine: ObservableObject {
         running = Self.forscanRunning(in: forscanDir)
         if !serialBusy { portHeld = Self.portHeld(port) }
         refreshFiles()
+    }
+
+    /// No idle sleep while FORScan is open: sleep cuts the adapter off, even in the middle of a write.
+    /// Closing a MacBook's lid still sleeps it; the card says so.
+    private func keepAwake(_ on: Bool) {
+        if on, sleepLock == nil {
+            sleepLock = ProcessInfo.processInfo.beginActivity(options: .idleSystemSleepDisabled, reason: "FORScan is open")
+        } else if !on, let lock = sleepLock {
+            ProcessInfo.processInfo.endActivity(lock)
+            sleepLock = nil
+        }
     }
 
     /// Serial ports a person can pick in Settings: every cu.* port except the Mac's own.

@@ -3,6 +3,11 @@
 Plugd shows the newest section in its update window and in "What's New" after an update.
 Keep each line plain text, one change per "- " line.
 
+## 0.3.7
+- Your Mac no longer goes to sleep while FORScan is open, so a long write doesn't get cut off. Closing a MacBook's lid still sleeps it.
+- Plugd warns you when the car battery is under 12.4 V, so you put a charger on before changing settings.
+- Fixed "Adapter changed" showing when no adapter was plugged in.
+
 ## 0.3.6
 - Plugd now runs on macOS 12 Monterey, so older Macs like a 2015 MacBook Air work too. On macOS 12 there's no menu bar icon or Open at login.
 

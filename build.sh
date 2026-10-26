@@ -4,8 +4,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 APP=Plugd.app
-VERSION=0.3.6
-BUILD=11   # Sparkle compares this number, so it goes up by one every release
+VERSION=0.3.7
+BUILD=12   # Sparkle compares this number, so it goes up by one every release
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/bin" "$APP/Contents/Frameworks"
 
