@@ -4,17 +4,23 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
 <channel>
 <title>Plugd</title>
 <item>
-<title>Plugd 0.3.6</title>
-<pubDate>Sun, 25 Oct 2026 18:46:57 +0000</pubDate>
-<sparkle:version>11</sparkle:version>
-<sparkle:shortVersionString>0.3.6</sparkle:shortVersionString>
+<title>Plugd 0.3.7</title>
+<pubDate>Mon, 26 Oct 2026 15:53:24 +0000</pubDate>
+<sparkle:version>12</sparkle:version>
+<sparkle:shortVersionString>0.3.7</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
-<sparkle:fullReleaseNotesLink>https://github.com/lncch/Plugd/releases/tag/v0.3.6</sparkle:fullReleaseNotesLink>
-<description><![CDATA[<h3>What's new in Plugd 0.3.6</h3><ul><li>Plugd now runs on macOS 12 Monterey, so older Macs like a 2015 MacBook Air work too. On macOS 12 there's no menu bar icon or Open at login.</li></ul>]]></description>
-<enclosure url="https://github.com/lncch/Plugd/releases/download/v0.3.6/Plugd.zip" sparkle:edSignature="QM+4VNpu5cfEW3fcG/Xv2MJ4phvALRu28m3zRQnF8N8DcFKS1FRyxaYbmTGcq2FbP5IzQ90/sM3eImk94sI+BA==" length="4736247" type="application/octet-stream"></enclosure>
+<sparkle:fullReleaseNotesLink>https://github.com/lncch/Plugd/releases/tag/v0.3.7</sparkle:fullReleaseNotesLink>
+<description><![CDATA[<h3>What's new in Plugd 0.3.7</h3><ul><li>Your Mac no longer goes to sleep while FORScan is open, so a long write doesn't get cut off. Closing a MacBook's lid still sleeps it.</li>
+<li>Plugd warns you when the car battery is under 12.4 V, so you put a charger on before changing settings.</li>
+<li>Fixed "Adapter changed" showing when no adapter was plugged in.</li>
+<li>Record the Dashboard to a CSV file you can open in Numbers or Excel.</li>
+<li>Engine codes now show what the engine was doing when a code was set (freeze frame).</li>
+<li>Backups you save in FORScan show which car they came from.</li>
+<li>Settings &gt; Remove Wine and FORScan frees about 1 GB before you delete Plugd.</li></ul>]]></description>
+<enclosure url="https://github.com/lncch/Plugd/releases/download/v0.3.7/Plugd.zip" sparkle:edSignature="8kK+tYNyshLaAXvmZ6Iw7BrFFOQmViEK0jOf7gxPkj3Se5Sa2uaf/GleehjagGScutNk7lEKo6yI140HYKwdAQ==" length="4807206" type="application/octet-stream"></enclosure>
 </item>
 </channel>
 </rss><!-- sparkle-signatures:
-edSignature: VY98TkyWqckDKBly1ULPh1kHA6R1FtKC4UQPeJtJ5SIFM8siTrdgpsXnKa8BMe3/bB5yK39CpsN3UuVT+ytmBQ==
-length: 1286
+edSignature: Yj7ZcDm4KRSPODW3cfAggUn8vaiVacxwC8YZfddqHaeExSDghSnz5wyNMecDPHaa8UMljkGSzchqGXx+QT63AQ==
+length: 1794
 -->
