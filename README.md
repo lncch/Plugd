@@ -18,7 +18,7 @@ If you like it, give it a ⭐. It helps other Ford owners find it.
 
 ## What it does
 
-- Installs Wine and downloads FORScan from forscan.org (it doesn't ship FORScan itself)
+- Installs Wine and downloads FORScan from forscan.org
 - Finds your USB OBD adapter, or a paired Bluetooth one, and connects FORScan to it
 - Gives FORScan a folder on your Mac (it shows up as drive O:) for license keys and As-Built backups
 - Warns you when you don't have a backup yet, and labels each backup with the car it came from
@@ -39,17 +39,6 @@ If you like it, give it a ⭐. It helps other Ford owners find it.
 Back up before you change anything, and keep a battery charger on the car while FORScan writes.
 
 From 0.3.5 on, Plugd updates itself. When a new version is out, it tells you; click **Update** and it installs and reopens. Older versions need one manual download of the latest release.
-
-## Tested on
-
-| Car | Adapter | Reads | Writes | Dashboard and codes |
-|---|---|---|---|---|
-| 2023 Ford Taurus, Middle East (Mondeo EVOS, 2021 MY) | cheap ELM327 v1.5 clone, CH340 chip, HS/MS switch | 22+ modules | yes, checked in the car | yes, v0.3.3 |
-
-
-## Credits
-
-FORScan is made by Alexey Savin (forscan.org). I'm not connected to FORScan or Ford. Plugd's code is MIT licensed. FORScan, Wine and innoextract keep their own licenses (see `THIRD_PARTY.md`).
 
 ## Contact
 
